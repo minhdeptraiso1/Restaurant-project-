@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đặt bàn thành công - Hoa Ban Restaurant</title>
+    <style>
+        body {
+            background: #f7f9fb;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #8b0000, #c62828);
+            color: #fff;
+            text-align: center;
+            padding: 40px 20px 30px;
+        }
+
+        .header h1 {
+            font-size: 26px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 15px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .content h2 {
+            color: #8b0000;
+            font-size: 22px;
+            margin-bottom: 20px;
+        }
+
+        .content p {
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            color: #555;
+        }
+
+        .reservation-details {
+            background: #f8f9fa;
+            border: 1px solid #e3e6ea;
+            border-left: 5px solid #8b0000;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: left;
+            margin: 25px 0;
+        }
+
+        .detail-item {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            font-size: 15px;
+        }
+
+        .detail-label {
+            color: #8b0000;
+            font-weight: 600;
+            min-width: 120px;
+        }
+
+        .detail-value {
+            color: #444;
+            font-weight: 500;
+        }
+
+        .reservation-id {
+            background: linear-gradient(135deg, #8b0000, #c62828);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            display: inline-block;
+            margin: 15px 0;
+        }
+
+        .thank-you {
+            background: #fff5f5;
+            border: 1px solid #ffcdd2;
+            color: #8b0000;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 30px 0;
+            font-weight: 600;
+            font-size: 17px;
+        }
+
+        .info-box {
+            background: #f0f8ff;
+            border: 1px solid #cfe2ff;
+            border-left: 5px solid #0d6efd;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: left;
+            color: #084298;
+            margin: 20px 0;
+        }
+
+        .footer {
+            background: #222;
+            color: #ccc;
+            text-align: center;
+            padding: 25px 15px;
+            font-size: 14px;
+            border-top: 4px solid #8b0000;
+        }
+
+        .footer p {
+            margin: 5px 0;
+            line-height: 1.5;
+        }
+
+        .brand {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        @media (max-width: 600px) {
+            .reservation-id {
+                font-size: 18px;
+                padding: 12px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🍽️ Đặt bàn thành công</h1>
+        <p>Hoa Ban Restaurant</p>
+    </div>
+
+    <div class="content">
+        <h2>Xin chào <span th:text="${fullName}">Khách hàng</span>!</h2>
+
+        <p>Cảm ơn bạn đã đặt bàn tại <strong>Hoa Ban Restaurant</strong>.</p>
+        <p>Đơn đặt bàn của bạn đã được xác nhận thành công 🎉</p>
+
+        <div class="reservation-details">
+            <div class="detail-item">
+                <span class="detail-label">📅 Thời gian:</span>
+                <span class="detail-value">
+                    <span th:text="${start}">...</span> – <span th:text="${end}">...</span>
+                </span>
+            </div>
+
+            <div class="detail-item">
+                <span class="detail-label">👥 Số khách:</span>
+                <span class="detail-value" th:text="${partySize}">...</span>
+            </div>
+
+            <div class="detail-item">
+                <span class="detail-label">📍 Trạng thái:</span>
+                <span class="detail-value">Đã xác nhận</span>
+            </div>
+        </div>
+
+        <p><strong>📋 Mã đặt chỗ của bạn:</strong></p>
+        <div class="reservation-id" th:text="${reservationId}">Mã đặt chỗ</div>
+        <p>Vui lòng cung cấp mã này khi đến nhà hàng.</p>
+
+        <div class="thank-you">
+            💐 Cảm ơn bạn đã chọn Hoa Ban Restaurant! Chúng tôi rất hân hạnh được phục vụ bạn 💐
+        </div>
+
+        <div class="info-box">
+            <strong>💡 Lưu ý:</strong>
+            <p>Vui lòng đến đúng giờ. Nếu có thay đổi, xin vui lòng liên hệ với chúng tôi trước ít nhất 2 giờ.</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p><span class="brand">Hoa Ban Restaurant</span></p>
+        <p>📍 392 Nguyễn Phước Lan | 📞 0868 030 043</p>
+        <p>📧 liên hệ@hoabanrestaurant.com | 🌐 www.hoabanrestaurant.com</p>
+        <p>Hẹn gặp lại bạn tại nhà hàng!</p>
+    </div>
+</div>
+</body>
+</html>

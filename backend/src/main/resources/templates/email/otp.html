@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác thực OTP - Hoa Ban Restaurant</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #f7f9fb;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #8b0000, #c62828);
+            color: #fff;
+            text-align: center;
+            padding: 40px 20px 30px;
+        }
+
+        .header h1 {
+            font-size: 26px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 15px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .content h2 {
+            color: #8b0000;
+            font-size: 22px;
+            margin-bottom: 15px;
+        }
+
+        .content p {
+            color: #555;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .otp-box {
+            display: inline-block;
+            background: linear-gradient(135deg, #8b0000, #c62828);
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            padding: 20px 50px;
+            border-radius: 10px;
+            letter-spacing: 10px;
+            font-family: 'Courier New', monospace;
+            margin: 30px 0;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            border: 1px solid #e3e6ea;
+            border-left: 5px solid #8b0000;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: left;
+            margin: 25px 0;
+        }
+
+        .info-box strong {
+            color: #8b0000;
+        }
+
+        .warning {
+            background: #fff5f5;
+            border: 1px solid #ffcdd2;
+            border-left: 5px solid #e53935;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 25px 0;
+            color: #b71c1c;
+            text-align: left;
+        }
+
+        .expiry {
+            color: #555;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .footer {
+            background: #222;
+            color: #ccc;
+            text-align: center;
+            padding: 25px 15px;
+            font-size: 14px;
+            border-top: 4px solid #8b0000;
+        }
+
+        .footer p {
+            margin: 5px 0;
+            line-height: 1.5;
+        }
+
+        .brand {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        @media (max-width: 600px) {
+            .otp-box {
+                font-size: 24px;
+                padding: 15px 30px;
+                letter-spacing: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🔐 Mã xác thực OTP</h1>
+        <p>Hoa Ban Restaurant</p>
+    </div>
+
+    <div class="content">
+        <h2>Xin chào!</h2>
+        <p>Bạn đang thực hiện xác thực tài khoản tại <strong>Hoa Ban Restaurant</strong>.</p>
+        <p>Vui lòng nhập mã OTP dưới đây để hoàn tất quá trình xác thực:</p>
+
+        <div class="otp-box" th:text="${code}">123456</div>
+
+        <div class="expiry">
+            ⏰ Mã này có hiệu lực trong <strong th:text="${ttlMinutes}">5</strong> phút.
+        </div>
+
+        <div class="warning">
+            ⚠️ <strong>Bảo mật:</strong> Không chia sẻ mã OTP này với bất kỳ ai.
+            Nhân viên Hoa Ban Restaurant sẽ không bao giờ yêu cầu bạn cung cấp mã OTP.
+        </div>
+
+        <div class="info-box">
+            💡 <strong>Hướng dẫn:</strong>
+            Nhập mã OTP vào trang xác thực để hoàn tất quá trình đăng nhập hoặc đăng ký.
+        </div>
+    </div>
+
+    <div class="footer">
+        <p><span class="brand">Hoa Ban Restaurant</span></p>
+        <p>📍 392 Nguyễn Phước Lan | 📞 0868 030 043</p>
+        <p>📧 liên hệ@hoabanrestaurant.com | 🌐 www.hoabanrestaurant.com</p>
+        <p>Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email.</p>
+    </div>
+</div>
+</body>
+</html>

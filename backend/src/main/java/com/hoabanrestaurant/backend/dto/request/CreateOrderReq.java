@@ -1,0 +1,11 @@
+package com.hoabanrestaurant.backend.dto.request;
+
+
+import java.util.UUID;
+
+public record CreateOrderReq(
+        UUID reservationId,   // optional
+        UUID tableId,         // optional (dine-in)
+        String note
+) {
+}

@@ -1,0 +1,21 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: hoaban-chat-ai
+
+  ai:
+    google:
+      genai:
+        project-id: gen-lang-client-0489928423
+        api-key: AIzaSyBZUEhcxVpzs86-vsIskXP2io_Xnr_1DXI
+internal:
+  secret: "HOABAN-AI-2025-SECRET-KEY"
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000
+      database: 0
