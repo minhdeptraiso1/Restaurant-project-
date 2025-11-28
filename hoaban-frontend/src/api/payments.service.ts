@@ -23,13 +23,10 @@ export interface VNPayIPNResponse {
 }
 
 // VNPay API functions
-export const createVNPayPayment = (
-  orderId: string,
-  params?: { returnUrl?: string; cancelUrl?: string }
-) =>
-  http
-    .post<{ data: VNPayCreateResponse }>(`/v1/payments/vnpay/create/${orderId}`, params)
-    .then((res) => res.data.data);
+export const createVNPayPayment = (orderId: string, params?: any) =>
+  http.post(`/v1/payments/vnpay/create/${orderId}`, params).then((res) => {
+    return res.data?.data ?? res.data; // hỗ trợ mọi cấu trúc
+  });
 
 export const handleVNPayReturn = (params: Record<string, string>) =>
   http.get<VNPayReturnResponse>("/v1/payments/vnpay/return", { params });
@@ -48,8 +45,13 @@ export const processPayment = async (
   additionalData?: any
 ) => {
   if (method === "VNPAY") {
-    const res = await createVNPayPayment(orderId, additionalData);
-    window.location.href = res.paymentUrl; // MUST REDIRECT
+    const payment = await createVNPayPayment(orderId, additionalData);
+
+    if (!payment?.paymentUrl) {
+      throw new Error("Không nhận được paymentUrl từ VNPay API");
+    }
+
+    window.location.href = payment.paymentUrl;
     return;
   }
 

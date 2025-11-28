@@ -14,7 +14,7 @@ export type TableReq = {
   code: string;
   areaId: string;
   seats: number;
-  status: "AVAILABLE" | "UNAVAILABLE" | "OCCUPIED" | "RESERVED" | "MAINTENANCE";
+  status: "AVAILABLE" | "UNAVAILABLE";
 };
 
 export const listTables = () => http.get("/v1/tables");

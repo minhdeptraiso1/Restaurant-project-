@@ -452,7 +452,7 @@ onMounted(async () => {
 
       <!-- Custom Amount -->
       <div class="space-y-3">
-        <h3 class="text-lg font-semibold text-gray-800">Tùy chỉnh số tiền</h3>
+        <h3 class="text-lg font-semibold text-gray-800">Tổng tiền</h3>
         <div class="flex items-center space-x-4">
           <label class="flex items-center">
             <input
@@ -465,31 +465,10 @@ onMounted(async () => {
               "
               class="mr-2"
             />
-            <span>Theo giỏ hàng: {{ formatCurrency(subtotal) }}</span>
+            <span>Tổng giá trị đơn hàng: {{ formatCurrency(subtotal) }}</span>
           </label>
         </div>
-        <div class="flex items-center space-x-4">
-          <label class="flex items-center">
-            <input
-              type="radio"
-              :value="true"
-              :checked="!!customAmount"
-              @change="if (!customAmount) customAmount = subtotal;"
-              class="mr-2"
-            />
-            <span>Nhập số tiền khác:</span>
-          </label>
-          <input
-            v-if="customAmount !== null"
-            v-model.number="customAmount"
-            type="number"
-            min="0"
-            step="1000"
-            @input="onVoucherChange"
-            class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Nhập số tiền"
-          />
-        </div>
+        <div class="flex items-center space-x-4"></div>
       </div>
 
       <!-- Voucher Selection -->
