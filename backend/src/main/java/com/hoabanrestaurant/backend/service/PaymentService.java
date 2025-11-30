@@ -1,15 +1,14 @@
 package com.hoabanrestaurant.backend.service;
 
-import com.hoabanrestaurant.backend.dto.response.PaymentDTO;
-import com.hoabanrestaurant.backend.entity.Order;
+import com.hoabanrestaurant.backend.dto.request.VNPayReq;
+import com.hoabanrestaurant.backend.dto.response.VNPayResponse;
 import jakarta.servlet.http.HttpServletRequest;
 
 public interface PaymentService {
-    PaymentDTO.VNPayResponse createVnPayPayment(HttpServletRequest req, Order order);
+    VNPayResponse createPayment(HttpServletRequest request, VNPayReq reqBody);
 
-    void handleVnPayReturn(HttpServletRequest request);  // /v1/payments/vnpay-return
+    String handleIPN(HttpServletRequest request);
 
-    String handleVnPayIpn(HttpServletRequest request);   // /v1/payments/vnpay-ipn
-
-
+    void handleReturn(HttpServletRequest request);
 }
+

@@ -1,55 +1,83 @@
 package com.hoabanrestaurant.backend.util;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.xml.bind.DatatypeConverter;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.TreeMap;
 
 public class VNPayUtil {
 
-    public static String urlEncode(String s) {
-        // VNPay yêu cầu UTF-8 và space là %20 (không phải +)
-        return URLEncoder.encode(s, StandardCharsets.UTF_8).replace("+", "%20");
-    }
-
-    /**
-     * Build query để KÝ: sort A→Z, encode key & value, bỏ null/rỗng và KHÔNG gồm vnp_SecureHash, vnp_SecureHashType
-     */
-    public static String buildQuery(Map<String, String> params, boolean encodeKey) {
-        return params.entrySet().stream()
-                .filter(e -> e.getValue() != null && !e.getValue().isEmpty())
-                .filter(e -> !e.getKey().equals("vnp_SecureHash") && !e.getKey().equals("vnp_SecureHashType"))
-                .sorted(Map.Entry.comparingByKey())
-                .map(e -> (encodeKey ? urlEncode(e.getKey()) : e.getKey()) + "=" + urlEncode(e.getValue()))
-                .collect(Collectors.joining("&"));
-    }
-
-    public static String hmacSHA512(String secret, String data) {
+    public static String hmacSHA512(String key, String data) {
         try {
-            Mac hmac = Mac.getInstance("HmacSHA512");
-            hmac.init(new SecretKeySpec(secret.trim().getBytes(StandardCharsets.UTF_8), "HmacSHA512"));
-            byte[] raw = hmac.doFinal(data.getBytes(StandardCharsets.UTF_8));
-            StringBuilder sb = new StringBuilder(raw.length * 2);
-            for (byte b : raw) sb.append(String.format("%02x", b));
-            return sb.toString();
+            Mac hmac512 = Mac.getInstance("HmacSHA512");
+            SecretKeySpec secretKey = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "HmacSHA512");
+            hmac512.init(secretKey);
+            byte[] bytes = hmac512.doFinal(data.getBytes(StandardCharsets.UTF_8));
+            return DatatypeConverter.printHexBinary(bytes).toLowerCase();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Cannot generate HMAC SHA512", e);
         }
     }
 
-    public static String toVnpAmount(BigDecimal vnd) {
-        return vnd.multiply(BigDecimal.valueOf(100)).setScale(0).toPlainString(); // ×100, không dấu
+    public static String buildQuery(Map<String, String> params) {
+        List<String> keys = new ArrayList<>(params.keySet());
+        Collections.sort(keys);
+
+        StringBuilder sb = new StringBuilder();
+
+        for (String key : keys) {
+            String value = params.get(key);
+            if (value == null || value.isEmpty()) continue;
+
+            sb.append(key).append("=")
+                    .append(URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20"))
+                    .append("&");
+        }
+
+        sb.setLength(sb.length() - 1);
+        return sb.toString();
     }
 
+    public static boolean verifyChecksum(HttpServletRequest request, String secretKey) {
+        Map<String, String> fields = new TreeMap<>();
+        request.getParameterMap().forEach((key, value) -> {
+            if (!key.equals("vnp_SecureHash") && !key.equals("vnp_SecureHashType")) {
+                fields.put(key, value[0]);
+            }
+        });
+
+        String generated = hmacSHA512(secretKey, buildQuery(fields));
+        String received = request.getParameter("vnp_SecureHash");
+
+        return generated.equals(received);
+    }
+
+    public static String now() {
+        return DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+                .withZone(ZoneId.of("Asia/Ho_Chi_Minh"))
+                .format(Instant.now());
+    }
+
+    public static String expire(int minutes) {
+        return DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+                .withZone(ZoneId.of("Asia/Ho_Chi_Minh"))
+                .format(Instant.now().plusSeconds(minutes * 60));
+    }
+
+    /**
+     * Lấy IP client từ request, xử lý X-Forwarded-For cho proxy/ngrok
+     */
     public static String getClientIp(HttpServletRequest req) {
         String ip = req.getHeader("X-Forwarded-For");
         if (ip != null && !ip.isBlank()) {
@@ -57,34 +85,10 @@ public class VNPayUtil {
         } else {
             ip = req.getRemoteAddr();
         }
-        // ép IPv6 loopback về 127.0.0.1
+        // Xử lý IPv6 loopback → IPv4
         if (ip == null || ip.isBlank() || ip.contains(":")) {
             ip = "127.0.0.1";
         }
         return ip;
-    }
-
-
-    private static final ZoneId HCM = ZoneId.of("Asia/Ho_Chi_Minh");
-
-    public static String nowString() {
-        return DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(HCM).format(Instant.now());
-    }
-
-    public static String plusMinutesString(int minutes) {
-        return DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(HCM).format(Instant.now().plusSeconds(minutes * 60L));
-    }
-
-    /**
-     * Verify checksum cho return/ipn: DỰNG raw giống hệt lúc ký và so sánh không phân biệt hoa/thường
-     */
-    public static boolean verifyChecksum(HttpServletRequest req, String secret) {
-        Map<String, String> params = new HashMap<>();
-        req.getParameterMap().forEach((k, v) -> params.put(k, v != null && v.length > 0 ? v[0] : null));
-        String secureHash = params.remove("vnp_SecureHash");
-        params.remove("vnp_SecureHashType");
-        String raw = buildQuery(params, true);
-        String calc = hmacSHA512(secret, raw);
-        return secureHash != null && secureHash.equalsIgnoreCase(calc);
     }
 }
