@@ -20,6 +20,7 @@ const areas = ref<any[]>([]);
 const dishes = ref<any[]>([]);
 const loading = ref(false);
 const processingPayment = ref(false);
+const updatingStatus = ref(false);
 
 // Filters
 const selectedStatus = ref<"ALL" | "OPEN" | "PAID" | "CANCELLED" | "UNPAID">("OPEN");
@@ -294,6 +295,10 @@ async function updateOrderStatus() {
     toast.error("Vui lòng chọn trạng thái");
     return;
   }
+
+  if (updatingStatus.value) return; // Prevent double-click
+
+  updatingStatus.value = true;
   try {
     // Call API to update order status
     await updateOrderStatusAPI(statusForm.value.orderId, { status: statusForm.value.status });
@@ -303,6 +308,8 @@ async function updateOrderStatus() {
     await loadData();
   } catch (e: any) {
     toast.error(e?.friendlyMessage || "Cập nhật trạng thái thất bại");
+  } finally {
+    updatingStatus.value = false;
   }
 }
 
@@ -756,11 +763,12 @@ onMounted(loadData);
 
           <div class="pt-1">
             <button
-              class="w-full px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 border border-blue-400/30 disabled:opacity-50"
-              :disabled="!statusForm.orderId || !statusForm.status"
+              class="w-full px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 border border-blue-400/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              :disabled="!statusForm.orderId || !statusForm.status || updatingStatus"
               @click="updateOrderStatus"
             >
-              Cập nhật trạng thái
+              <span v-if="updatingStatus">⏳ Đang cập nhật...</span>
+              <span v-else>Cập nhật trạng thái</span>
             </button>
           </div>
         </div>

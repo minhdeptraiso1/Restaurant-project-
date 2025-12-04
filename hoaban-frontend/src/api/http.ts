@@ -51,7 +51,7 @@ const http = axios.create({
 });
 
 http.interceptors.request.use((config) => {
-  // Skip authentication for open-by-qr endpoint (guest access)
+  // Skip authentication for guest endpoints
   const isGuestEndpoint = config.url?.includes("/open-by-qr");
 
   const token = TokenManager.getAccessToken();
@@ -90,9 +90,25 @@ http.interceptors.response.use(
     const friendlyMessage = extractErrorMessage(err);
     err.friendlyMessage = friendlyMessage;
 
-    // 401 handling with refresh retry (once)
+    const isOptionalAuthEndpoint =
+      originalConfig.url?.includes("/combos/suggested") || originalConfig.url?.includes("/auth/me");
+
     if (status === 401 && !originalConfig._retry && !originalConfig.url?.includes("/auth/login")) {
       originalConfig._retry = true;
+
+      if (isOptionalAuthEndpoint) {
+        console.log("🔓 Optional auth endpoint failed, skipping refresh and redirect");
+        return Promise.reject(err);
+      }
+
+      const hasRefreshToken = TokenManager.getRefreshToken();
+
+      if (!hasRefreshToken) {
+        TokenManager.clearTokens();
+
+        return Promise.reject(err);
+      }
+
       try {
         if (isRefreshing) {
           return await new Promise((resolve, reject) => {
@@ -101,18 +117,17 @@ http.interceptors.response.use(
         }
         isRefreshing = true;
         const resp = await performRefresh(originalConfig);
-        // Flush queue success
         refreshQueue.forEach((p) => p.resolve(http.request(p.original)));
         refreshQueue = [];
         return resp;
       } catch (refreshErr) {
         refreshQueue.forEach((p) => p.reject(refreshErr));
         refreshQueue = [];
-        // Clear tokens & redirect
-        TokenManager.clearTokens();
-        if (!window.location.pathname.startsWith("/login")) {
-          setTimeout(() => (window.location.href = "/login"), 0);
+        if (!isOptionalAuthEndpoint) {
+          TokenManager.clearTokens();
         }
+
+        return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;
       }

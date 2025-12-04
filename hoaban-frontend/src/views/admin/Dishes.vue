@@ -20,10 +20,11 @@ const form = ref({
   categoryId: "",
   name: "",
   description: "",
-  unit: "PORTION",
+  unit: "PORTION" as "PORTION" | "PLATE" | "BOWL" | "GLASS",
   price: 0,
   imageUrl: "",
-  status: "ACTIVE",
+  status: "ACTIVE" as "ACTIVE" | "INACTIVE",
+  signature: false,
 });
 const editingId = ref<string>("");
 const loading = ref(false);
@@ -52,6 +53,14 @@ const UNIT_MAP: Record<string, string> = {
 };
 function getUnitText(u: string) {
   return UNIT_MAP[u] || u;
+}
+
+const STATUS_MAP: Record<string, { label: string; color: string }> = {
+  ACTIVE: { label: "Hoạt động", color: "emerald" },
+  INACTIVE: { label: "Tạm dừng", color: "gray" },
+};
+function getStatusInfo(status: string) {
+  return STATUS_MAP[status] || { label: status, color: "gray" };
 }
 
 function vnd(n: number) {
@@ -123,6 +132,7 @@ function resetForm() {
     price: 0,
     imageUrl: "",
     status: "ACTIVE",
+    signature: false,
   };
   editingId.value = "";
 }
@@ -136,6 +146,7 @@ function editDish(dish: Dish) {
     price: Number(dish.price),
     imageUrl: dish.imageUrl || "",
     status: dish.status,
+    signature: dish.signature || false,
   };
   editingId.value = dish.id;
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -331,6 +342,22 @@ onMounted(load);
             <option class="bg-[#0b1512]" value="ACTIVE">Hoạt động</option>
             <option class="bg-[#0b1512]" value="INACTIVE">Tạm dừng</option>
           </select>
+        </div>
+
+        <!-- ✨ Món đặc trưng (Best Seller) -->
+        <div class="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="signature"
+            v-model="form.signature"
+            class="w-4 h-4 text-yellow-600 bg-gray-700 border-gray-600 rounded focus:ring-yellow-500 focus:ring-2"
+          />
+          <label
+            for="signature"
+            class="text-sm font-medium text-white/80 cursor-pointer flex items-center gap-1"
+          >
+            <span class="text-yellow-400">⭐</span> Món đặc trưng (Best Seller)
+          </label>
         </div>
 
         <!-- Ảnh + nút chọn -->

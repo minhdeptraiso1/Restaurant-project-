@@ -1,48 +1,21 @@
 import http from "./http";
+import type { LoyaltyPoints, LoyaltyCatalogItem, LoyaltyUserVoucher } from "@/types/loyalty.types";
+import type { Voucher } from "@/types/voucher.types";
 
-// Loyalty (Customer-side) APIs per spec
-// Catalog: vouchers user can afford (filtered by backend using current points & validity)
 export const getLoyaltyCatalog = (page = 0, size = 10) =>
-  http.get("/v1/loyalty/catalog", { params: { page, size } });
+  http.get<{ content: LoyaltyCatalogItem[] }>("/v1/loyalty/catalog", { params: { page, size } });
 
-// Points
-export const getMyLoyaltyPoints = () => http.get("/v1/loyalty/me/points");
+export const getMyLoyaltyPoints = () => http.get<LoyaltyPoints>("/v1/loyalty/me/points");
 
-// Wallet (unused user vouchers)
-export const getMyVouchers = () => http.get("/v1/loyalty/me/vouchers");
+export const getMyVouchers = () => http.get<LoyaltyUserVoucher[]>("/v1/loyalty/me/vouchers");
 
-// Redeem by code
-export const redeemVoucherByCode = (code: string) => http.post("/v1/loyalty/redeem", { code });
+export const redeemVoucherByCode = (code: string) =>
+  http.post<LoyaltyUserVoucher>("/v1/loyalty/redeem", { code });
 
-// Redeem by voucher id (catalog item id)
 export const redeemVoucherById = (voucherId: string) =>
-  http.post(`/v1/loyalty/redeem/${voucherId}`, {});
+  http.post<LoyaltyUserVoucher>(`/v1/loyalty/redeem/${voucherId}`, {});
 
-// Types (keep loose to accommodate both old & new fields while migrating)
-export interface LoyaltyVoucher {
-  id: string;
-  code: string;
-  name: string;
-  type: "PERCENT" | "FIXED";
-  value: number; // percent or fixed amount
-  minOrder: number; // minimum order amount
-  maxDiscount?: number; // cap for percent type
-  pointCost: number; // cost to redeem
-  startAt: string;
-  endAt: string;
-  status: "ACTIVE" | "INACTIVE" | "EXPIRED" | "DRAFT";
-  description?: string;
-}
-
-export interface LoyaltyUserVoucher {
-  id: string; // user-voucher id (used to apply to order)
-  voucher: LoyaltyVoucher; // embedded base voucher data
-  status: "UNUSED" | "USED" | "EXPIRED";
-  exchangedAt: string;
-  expiresAt: string;
-  usedAt?: string;
-}
-
+// Helper types for data normalization
 type RawRecord = Record<string, unknown>;
 
 const isRecord = (value: unknown): value is RawRecord =>
@@ -166,7 +139,7 @@ export const normalizeUserVoucher = (rawValue: unknown): LoyaltyUserVoucher => {
   const rawType = pickString(nested, ["type"], pickString(raw, ["type", "voucherType"], "FIXED"));
   const normalizedType = rawType.toUpperCase().includes("PERCENT") ? "PERCENT" : "FIXED";
 
-  const voucher: LoyaltyVoucher = {
+  const voucher: Voucher = {
     id: pickString(nested, ["id"], pickString(raw, ["voucherId", "id"], "")),
     code: pickString(nested, ["code"], pickString(raw, ["code", "voucherCode"], "")),
     name: pickString(nested, ["name"], pickString(raw, ["name", "voucherName"], "Voucher")),
@@ -192,7 +165,7 @@ export const normalizeUserVoucher = (rawValue: unknown): LoyaltyUserVoucher => {
       ["endAt", "validUntil"],
       pickDateString(raw, ["endAt", "expiresAt", "validUntil"], new Date().toISOString())
     ),
-    status: pickString(nested, ["status", "voucherStatus"], "ACTIVE") as LoyaltyVoucher["status"],
+    status: pickString(nested, ["status", "voucherStatus"], "ACTIVE") as Voucher["status"],
     description:
       pickString(
         nested,

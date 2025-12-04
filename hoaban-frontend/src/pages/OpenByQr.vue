@@ -46,7 +46,6 @@ async function loadByQr() {
   } catch (e: any) {
     console.error(e);
 
-    // Check if error is "already has open order"
     const errorMsg = e?.response?.data?.friendlyMessage || e?.friendlyMessage || e?.message || "";
     const status = e?.response?.status;
 

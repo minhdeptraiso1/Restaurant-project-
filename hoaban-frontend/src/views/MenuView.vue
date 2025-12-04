@@ -169,6 +169,7 @@ onMounted(() => {
           :description="dish.description"
           :unit="dish.unit"
           :status="dish.status"
+          :signature="dish.signature"
           class="transform hover:scale-105 transition-all duration-300"
         />
       </div>

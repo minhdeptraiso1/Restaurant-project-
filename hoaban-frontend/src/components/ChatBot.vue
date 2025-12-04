@@ -37,7 +37,8 @@ const scrollToBottom = () => {
 const toggleChat = async () => {
   if (!isLoggedIn.value) {
     toast.info("Vui lòng đăng nhập để sử dụng chatbot");
-    router.push("/auth/login");
+    const currentPath = router.currentRoute.value.fullPath;
+    router.push({ path: "/auth/login", query: { redirect: currentPath } });
     return;
   }
   isOpen.value = !isOpen.value;

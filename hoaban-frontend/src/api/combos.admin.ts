@@ -1,34 +1,13 @@
 import http from "./http";
+import type { Combo, CreateComboRequest, UpdateComboRequest } from "@/types/combo.types";
 
-export const listCombos = () => http.get("/v1/combos/all");
+export const listCombos = () => http.get<Combo[]>("/v1/combos/all");
 
-export const getCombo = (id: string) => http.get(`/v1/combos/${id}`);
+export const getCombo = (id: string) => http.get<Combo>(`/v1/combos/${id}`);
 
-export const createCombo = (p: {
-  name: string;
-  description?: string;
-  price: number;
-  imageUrl?: string;
-  status?: string;
-  items: Array<{
-    dishId: string;
-    quantity: number;
-  }>;
-}) => http.post("/v1/combos", p);
+export const createCombo = (payload: CreateComboRequest) => http.post<Combo>("/v1/combos", payload);
 
-export const updateCombo = (
-  id: string,
-  p: {
-    name?: string;
-    description?: string;
-    price?: number;
-    imageUrl?: string;
-    status?: string;
-    items?: Array<{
-      dishId: string;
-      quantity: number;
-    }>;
-  }
-) => http.put(`/v1/combos/${id}`, p);
+export const updateCombo = (id: string, payload: UpdateComboRequest) =>
+  http.put<Combo>(`/v1/combos/${id}`, payload);
 
-export const deleteCombo = (id: string) => http.delete(`/v1/combos/${id}`);
+export const deleteCombo = (id: string) => http.delete<void>(`/v1/combos/${id}`);

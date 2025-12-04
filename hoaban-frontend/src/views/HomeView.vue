@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick, watch, onUnmounted } from "vue";
-import { listDishes, type Dish } from "@/api/dishes.service";
-import { listCombos, type Combo } from "@/api/combos.service";
+import { listDishes } from "@/api/dishes.service";
+import { getSuggestedMenu, listCombos } from "@/api/combos.service";
 import { createReservation } from "@/api/reservations.service";
-import { listAreas, type AreaDto } from "@/api/areas.admin";
+import { listAreas } from "@/api/areas.admin";
+import type { Dish } from "@/types/dish.types";
+import type { Combo } from "@/types/combo.types";
+import type { AreaDto } from "@/types/area.types";
 import { toast } from "vue3-toastify";
 import DishModal from "@/components/DishModal.vue";
 import ComboCard from "@/components/ComboCard.vue";
@@ -66,36 +69,84 @@ const resolveImage = (imagePath: string) => {
   }
 };
 
-// Banner image
+// Banner carousel state
+const currentSlide = ref(0);
+const totalSlides = 5;
+let slideInterval: number | null = null;
+
+// Auto-advance slides
+const startSlideshow = () => {
+  stopSlideshow();
+  slideInterval = window.setInterval(() => {
+    nextSlide();
+  }, 5000); // Change slide every 5 seconds
+};
+
+const stopSlideshow = () => {
+  if (slideInterval) {
+    clearInterval(slideInterval);
+    slideInterval = null;
+  }
+};
+
+const nextSlide = () => {
+  currentSlide.value = (currentSlide.value + 1) % totalSlides;
+};
+
+const prevSlide = () => {
+  currentSlide.value = (currentSlide.value - 1 + totalSlides) % totalSlides;
+};
+
+// Banner image (legacy, kept for compatibility)
 const bannerImg = new URL("../assets/img/phong_vip.jpg", import.meta.url).href;
 
 const fetchFeaturedItems = async () => {
   try {
     loading.value = true;
-    const [dishesResponse, combosResponse, areasResponse] = await Promise.all([
-      listDishes(),
-      listCombos(),
-      listAreas(),
-    ]);
 
-    console.log("Dishes response:", dishesResponse);
-    console.log("Combos response:", combosResponse);
-    console.log("Areas response:", areasResponse);
+    // Try to get suggested menu first (requires auth)
+    let suggestedData: { dishes: any[]; combos: any[] } = { dishes: [], combos: [] };
+    let areasData: any[] = [];
 
-    // Get top 8 dishes for featured section
-    // Handle pagination response structure
-    const dishesData =
-      dishesResponse?.content || dishesResponse?.data?.content || dishesResponse?.data || [];
-    featuredDishes.value = Array.isArray(dishesData) ? dishesData.slice(0, 8) : [];
+    try {
+      console.log("📊 Fetching suggested menu...");
+      const [suggestedMenuResponse, areasResponse] = await Promise.all([
+        getSuggestedMenu(),
+        listAreas(),
+      ]);
 
-    // Get top 4 active combos for featured section
-    const combosData = combosResponse?.data || combosResponse || [];
-    featuredCombos.value = (Array.isArray(combosData) ? combosData : [])
-      .filter((combo) => combo.status === "ACTIVE")
-      .slice(0, 4);
+      console.log("✅ Suggested menu response:", suggestedMenuResponse);
+      console.log("✅ Areas response:", areasResponse);
 
-    // Get areas
-    const areasData = areasResponse?.data || [];
+      suggestedData = suggestedMenuResponse?.data || { dishes: [], combos: [] };
+      areasData = areasResponse?.data || [];
+    } catch (suggestedError: any) {
+      // If suggested menu fails (e.g., user not logged in), fall back to list APIs
+      console.log("⚠️ Suggested menu failed, using fallback lists");
+      console.log("Error:", suggestedError);
+
+      const [dishesResponse, combosResponse, areasResponse] = await Promise.all([
+        listDishes({ page: 0, size: 8 }),
+        listCombos(),
+        listAreas(),
+      ]);
+
+      // Get top 4 dishes from list
+      const dishesData = dishesResponse?.data?.content || [];
+      suggestedData.dishes = (Array.isArray(dishesData) ? dishesData : []).slice(0, 4);
+
+      // Get top 4 active combos
+      const combosData = combosResponse?.data || combosResponse || [];
+      suggestedData.combos = (Array.isArray(combosData) ? combosData : [])
+        .filter((combo: any) => combo.status === "ACTIVE")
+        .slice(0, 4);
+
+      areasData = areasResponse?.data || [];
+    }
+
+    // Set data
+    featuredDishes.value = Array.isArray(suggestedData.dishes) ? suggestedData.dishes : [];
+    featuredCombos.value = Array.isArray(suggestedData.combos) ? suggestedData.combos : [];
     areas.value = Array.isArray(areasData) ? areasData : [];
 
     console.log("Featured dishes count:", featuredDishes.value.length);
@@ -146,6 +197,13 @@ const autoFillUserInfo = () => {
 // Form submission for reservation
 async function submitReservation() {
   try {
+    // Check if user is logged in
+    if (!auth.token) {
+      toast.info("Vui lòng đăng nhập để đặt bàn");
+      router.push({ name: "login", query: { redirect: "/reservation" } });
+      return;
+    }
+
     if (
       !customerName.value ||
       !customerPhone.value ||
@@ -381,7 +439,7 @@ const setupAreaModal = () => {
   areaList.innerHTML = "";
 
   // Filter only ACTIVE areas
-  const activeAreas = areas.value.filter((a) => a.status === "ACTIVE");
+  const activeAreas = areas.value.filter((a: AreaDto) => a.status === "ACTIVE");
 
   if (activeAreas.length === 0) {
     areaList.innerHTML = '<p class="text-gray-500 text-sm">Không có khu vực nào</p>';
@@ -389,7 +447,7 @@ const setupAreaModal = () => {
   }
 
   // Render area buttons
-  activeAreas.forEach((areaData, index) => {
+  activeAreas.forEach((areaData: AreaDto, index: number) => {
     const button = document.createElement("button");
     button.className =
       "w-full text-left p-3 rounded-lg border-2 border-gray-200 hover:border-[#9f0909] hover:bg-gray-50 transition-all";
@@ -448,6 +506,9 @@ onMounted(() => {
   // Auto-fill user info if logged in
   autoFillUserInfo();
 
+  // Start banner slideshow
+  startSlideshow();
+
   // Setup all components after DOM is mounted
   nextTick(() => {
     setupGallery();
@@ -460,6 +521,7 @@ onUnmounted(() => {
   if (observer) {
     observer.disconnect();
   }
+  stopSlideshow();
 });
 
 // Watch for user changes
@@ -469,117 +531,445 @@ watch(() => auth.token, autoFillUserInfo);
 
 <template>
   <div class="min-h-screen bg-white">
-    <!-- Hero Banner -->
+    <!-- Hero Banner Carousel - Jollibee Style -->
     <section
       id="trang-chu"
-      class="relative h-screen flex items-center justify-center overflow-hidden"
+      class="relative h-[600px] overflow-hidden bg-gradient-to-br from-orange-50 to-yellow-50"
     >
-      <!-- Background Image -->
-      <div class="absolute inset-0">
-        <img
-          src="/phong_vip.jpg"
-          alt="Hoa Ban Restaurant"
-          class="w-full h-full object-cover"
-          style="z-index: 1"
-          onerror="console.error('Image failed to load:', this.src)"
-          onload="console.log('Image loaded successfully:', this.src)"
-        />
-        <!-- Gradient Overlay for better text readability -->
+      <!-- Banner Slides -->
+      <div class="banner-container relative h-full">
+        <!-- Slide 1: Thịt Trâu Gác Bếp -->
         <div
-          class="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40"
-          style="z-index: 2"
-        ></div>
-        <!-- Additional overlay for center focus -->
-        <div class="absolute inset-0 bg-black/15" style="z-index: 3"></div>
-      </div>
-
-      <!-- Content -->
-      <div
-        class="relative z-10 text-center text-white max-w-5xl mx-auto px-4 hero-content"
-        style="z-index: 4"
-      >
-        <!-- Main content with backdrop -->
-        <div
-          class="backdrop-blur-sm bg-black/60 rounded-3xl p-8 md:p-12 border border-white/20 shadow-2xl"
+          :class="[
+            'banner-slide',
+            'absolute',
+            'inset-0',
+            'transition-opacity',
+            'duration-1000',
+            currentSlide === 0 ? 'opacity-100 z-10' : 'opacity-0 z-0',
+          ]"
         >
-          <h1 class="text-4xl md:text-6xl lg:text-7xl font-extrabold mb-6 text-shadow-lg">
-            <span
-              class="block text-white drop-shadow-lg"
-              style="text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 0, 0, 0.5)"
-            >
-              Hoa Ban Restaurant
-            </span>
-          </h1>
-
-          <p
-            class="text-lg md:text-xl lg:text-2xl mb-8 text-white font-semibold"
-            style="text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8), 0 0 6px rgba(0, 0, 0, 0.5)"
-          >
-            Hương vị thiên nhiên - Sức khỏe trọn vẹn
-          </p>
-
-          <p
-            class="text-sm md:text-base text-white mb-10 max-w-2xl mx-auto font-medium"
-            style="text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7), 0 0 4px rgba(0, 0, 0, 0.4)"
-          >
-            Trải nghiệm ẩm thực Tây Bắc đậm đà ngay tại trung tâm Đà Nẵng với không gian sang trọng
-            và phục vụ tận tâm
-          </p>
-
-          <button
-            @click="handleBooking"
-            class="hero-button group relative inline-flex items-center justify-center px-10 py-4 text-lg md:text-xl font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 hover:from-amber-600 hover:to-orange-600"
-          >
-            <span
-              class="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"
-            ></span>
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-              ></path>
-            </svg>
-            <span class="relative z-10">Đặt bàn ngay</span>
-          </button>
+          <div class="grid md:grid-cols-2 h-full items-center max-w-7xl mx-auto px-8">
+            <!-- Left Content -->
+            <div class="flex flex-col justify-center space-y-6 z-20">
+              <div class="inline-block">
+                <span
+                  class="bg-gradient-to-r from-red-600 to-orange-500 text-white px-6 py-2 rounded-full text-sm font-bold uppercase tracking-wider shadow-lg"
+                >
+                  Đặc Sản Tây Bắc
+                </span>
+              </div>
+              <h1 class="text-5xl md:text-7xl font-black text-gray-900 leading-tight">
+                Thịt Trâu<br />
+                <span
+                  class="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-500"
+                >
+                  Gác Bếp
+                </span>
+              </h1>
+              <p class="text-xl text-gray-700 font-semibold max-w-md">
+                Hương vị đậm đà, thơm ngon của núi rừng Tây Bắc
+              </p>
+              <div class="flex items-baseline space-x-4">
+                <span class="text-5xl font-black text-red-600">250.000đ</span>
+                <span class="text-2xl text-gray-500 line-through">300.000đ</span>
+              </div>
+              <button
+                @click="router.push('/menu')"
+                class="bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 w-fit"
+              >
+                <span class="flex items-center space-x-2">
+                  <span>Đặt Món Ngay</span>
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M14 5l7 7m0 0l-7 7m7-7H3"
+                    ></path>
+                  </svg>
+                </span>
+              </button>
+            </div>
+            <!-- Right Image -->
+            <div class="relative h-full flex items-center justify-center">
+              <div
+                class="absolute inset-0 bg-gradient-to-br from-yellow-200/30 to-orange-200/30 rounded-full blur-3xl"
+              ></div>
+              <img
+                src="https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=800&h=800&fit=crop"
+                alt="Thịt Trâu Gác Bếp"
+                class="relative z-10 w-[500px] h-[500px] object-cover rounded-3xl shadow-2xl transform hover:scale-105 transition-transform duration-500"
+                loading="lazy"
+              />
+            </div>
+          </div>
         </div>
 
-        <!-- Floating decoration elements -->
+        <!-- Slide 2: Cá Hồi Sapa -->
         <div
-          class="absolute -top-4 -left-4 w-20 h-20 bg-amber-400/20 rounded-full blur-xl floating"
-        ></div>
-        <div
-          class="absolute -bottom-6 -right-6 w-32 h-32 bg-orange-400/20 rounded-full blur-xl floating"
-          style="animation-delay: -2s"
-        ></div>
-        <div
-          class="absolute top-1/2 -right-8 w-16 h-16 bg-yellow-400/15 rounded-full blur-lg floating"
-          style="animation-delay: -4s"
-        ></div>
-      </div>
+          :class="[
+            'banner-slide',
+            'absolute',
+            'inset-0',
+            'transition-opacity',
+            'duration-1000',
+            currentSlide === 1 ? 'opacity-100 z-10' : 'opacity-0 z-0',
+          ]"
+        >
+          <div class="grid md:grid-cols-2 h-full items-center max-w-7xl mx-auto px-8">
+            <div class="flex flex-col justify-center space-y-6 z-20">
+              <div class="inline-block">
+                <span
+                  class="bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-6 py-2 rounded-full text-sm font-bold uppercase tracking-wider shadow-lg"
+                >
+                  Tươi Ngon Mỗi Ngày
+                </span>
+              </div>
+              <h1 class="text-5xl md:text-7xl font-black text-gray-900 leading-tight">
+                Cá Hồi<br />
+                <span
+                  class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500"
+                >
+                  Sapa
+                </span>
+              </h1>
+              <p class="text-xl text-gray-700 font-semibold max-w-md">
+                Tươi sống từ vùng cao, thịt ngọt thơm béo ngậy
+              </p>
+              <div class="flex items-baseline space-x-4">
+                <span class="text-5xl font-black text-blue-600">180.000đ</span>
+                <span class="text-lg text-gray-600">/phần</span>
+              </div>
+              <button
+                @click="router.push('/menu')"
+                class="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 w-fit"
+              >
+                <span class="flex items-center space-x-2">
+                  <span>Xem Thực Đơn</span>
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M14 5l7 7m0 0l-7 7m7-7H3"
+                    ></path>
+                  </svg>
+                </span>
+              </button>
+            </div>
+            <div class="relative h-full flex items-center justify-center">
+              <div
+                class="absolute inset-0 bg-gradient-to-br from-blue-200/30 to-cyan-200/30 rounded-full blur-3xl"
+              ></div>
+              <img
+                src="https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=800&h=800&fit=crop"
+                alt="Cá Hồi Sapa"
+                class="relative z-10 w-[500px] h-[500px] object-cover rounded-3xl shadow-2xl transform hover:scale-105 transition-transform duration-500"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </div>
 
-      <!-- Scroll indicator -->
-      <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-        <svg class="w-6 h-6 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M19 14l-7 7m0 0l-7-7m7 7V3"
-          ></path>
-        </svg>
+        <!-- Slide 3: Combo Tây Bắc -->
+        <div
+          :class="[
+            'banner-slide',
+            'absolute',
+            'inset-0',
+            'transition-opacity',
+            'duration-1000',
+            currentSlide === 2 ? 'opacity-100 z-10' : 'opacity-0 z-0',
+          ]"
+        >
+          <div class="grid md:grid-cols-2 h-full items-center max-w-7xl mx-auto px-8">
+            <div class="flex flex-col justify-center space-y-6 z-20">
+              <div class="inline-block">
+                <span
+                  class="bg-gradient-to-r from-amber-600 to-yellow-500 text-white px-6 py-2 rounded-full text-sm font-bold uppercase tracking-wider shadow-lg"
+                >
+                  🔥 Combo Siêu Hot
+                </span>
+              </div>
+              <h1 class="text-5xl md:text-7xl font-black text-gray-900 leading-tight">
+                Combo<br />
+                <span
+                  class="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-yellow-500"
+                >
+                  Tây Bắc
+                </span>
+              </h1>
+              <p class="text-xl text-gray-700 font-semibold max-w-md">
+                Trọn vẹn 4 món đặc sản + nước uống chỉ với
+              </p>
+              <div class="flex items-baseline space-x-4">
+                <span class="text-5xl font-black text-amber-600">399.000đ</span>
+                <span class="text-2xl text-gray-500 line-through">550.000đ</span>
+              </div>
+              <div
+                class="bg-gradient-to-r from-amber-100 to-yellow-100 border-2 border-amber-400 rounded-2xl p-4 max-w-md"
+              >
+                <p class="text-amber-800 font-bold">🎁 Tặng kèm rau rừng + nước chấm đặc biệt</p>
+              </div>
+              <button
+                @click="router.push('/menu')"
+                class="bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-700 hover:to-yellow-600 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 w-fit"
+              >
+                <span class="flex items-center space-x-2">
+                  <span>Đặt Combo Ngay</span>
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M14 5l7 7m0 0l-7 7m7-7H3"
+                    ></path>
+                  </svg>
+                </span>
+              </button>
+            </div>
+            <div class="relative h-full flex items-center justify-center">
+              <div
+                class="absolute inset-0 bg-gradient-to-br from-amber-200/30 to-yellow-200/30 rounded-full blur-3xl"
+              ></div>
+              <img
+                src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=800&fit=crop"
+                alt="Combo Tây Bắc"
+                class="relative z-10 w-[500px] h-[500px] object-cover rounded-3xl shadow-2xl transform hover:scale-105 transition-transform duration-500"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 4: Lợn Cắp Nách -->
+        <div
+          :class="[
+            'banner-slide',
+            'absolute',
+            'inset-0',
+            'transition-opacity',
+            'duration-1000',
+            currentSlide === 3 ? 'opacity-100 z-10' : 'opacity-0 z-0',
+          ]"
+        >
+          <div class="grid md:grid-cols-2 h-full items-center max-w-7xl mx-auto px-8">
+            <div class="flex flex-col justify-center space-y-6 z-20">
+              <h1 class="text-5xl md:text-7xl font-black text-gray-900 leading-tight">
+                Sườn Nướng Tảng<br />
+                <span
+                  class="text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-pink-500"
+                >
+                  Hoa Ban
+                </span>
+              </h1>
+              <p class="text-xl text-gray-700 font-semibold max-w-md">
+                Đặc sản núi rừng - Thịt mềm thơm, đẫm vị
+              </p>
+              <div class="flex items-baseline space-x-4">
+                <span class="text-5xl font-black text-rose-600">280.000đ</span>
+                <span class="text-lg text-gray-600">/kg</span>
+              </div>
+              <div
+                class="bg-gradient-to-r from-rose-100 to-pink-100 border-2 border-rose-400 rounded-2xl p-4 max-w-md"
+              >
+                <p class="text-rose-800 font-bold">
+                  ✨ Ướp gia vị bí truyền theo công thức dân tộc
+                </p>
+              </div>
+              <button
+                @click="router.push('/menu')"
+                class="bg-gradient-to-r from-rose-600 to-pink-500 hover:from-rose-700 hover:to-pink-600 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 w-fit"
+              >
+                <span class="flex items-center space-x-2">
+                  <span>Đặt Món Ngay</span>
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M14 5l7 7m0 0l-7 7m7-7H3"
+                    ></path>
+                  </svg>
+                </span>
+              </button>
+            </div>
+            <div class="relative h-full flex items-center justify-center">
+              <div
+                class="absolute inset-0 bg-gradient-to-br from-rose-200/30 to-pink-200/30 rounded-full blur-3xl"
+              ></div>
+              <img
+                src="https://images.unsplash.com/photo-1544025162-d76694265947?w=800&h=800&fit=crop"
+                alt="Lợn Cắp Nách"
+                class="relative z-10 w-[500px] h-[500px] object-cover rounded-3xl shadow-2xl transform hover:scale-105 transition-transform duration-500"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 5: Xôi Ngũ Sắc -->
+        <div
+          :class="[
+            'banner-slide',
+            'absolute',
+            'inset-0',
+            'transition-opacity',
+            'duration-1000',
+            currentSlide === 4 ? 'opacity-100 z-10' : 'opacity-0 z-0',
+          ]"
+        >
+          <div class="grid md:grid-cols-2 h-full items-center max-w-7xl mx-auto px-8">
+            <div class="flex flex-col justify-center space-y-6 z-20">
+              <div class="inline-block">
+                <span
+                  class="bg-gradient-to-r from-purple-600 to-indigo-500 text-white px-6 py-2 rounded-full text-sm font-bold uppercase tracking-wider shadow-lg"
+                >
+                  🌈 Đặc Sản Truyền Thống
+                </span>
+              </div>
+              <h1 class="text-5xl md:text-7xl font-black text-gray-900 leading-tight">
+                Xôi<br />
+                <span
+                  class="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-500 to-indigo-500"
+                >
+                  Ngũ Sắc
+                </span>
+              </h1>
+              <p class="text-xl text-gray-700 font-semibold max-w-md">
+                5 màu sắc thiên nhiên - Tinh hoa ẩm thực người Thái
+              </p>
+              <div class="flex items-baseline space-x-4">
+                <span class="text-5xl font-black text-purple-600">45.000đ</span>
+                <span class="text-lg text-gray-600">/phần</span>
+              </div>
+              <div
+                class="bg-gradient-to-r from-purple-100 to-indigo-100 border-2 border-purple-400 rounded-2xl p-4 max-w-md"
+              >
+                <p class="text-purple-800 font-bold">🌿 Nhuộm từ lá rừng thiên nhiên 100%</p>
+              </div>
+              <button
+                @click="router.push('/menu')"
+                class="bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-700 hover:to-indigo-600 text-white px-10 py-4 rounded-full text-lg font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 w-fit"
+              >
+                <span class="flex items-center space-x-2">
+                  <span>Thử Ngay</span>
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M14 5l7 7m0 0l-7 7m7-7H3"
+                    ></path>
+                  </svg>
+                </span>
+              </button>
+            </div>
+            <div class="relative h-full flex items-center justify-center">
+              <div
+                class="absolute inset-0 bg-gradient-to-br from-purple-200/30 to-indigo-200/30 rounded-full blur-3xl"
+              ></div>
+              <img
+                src="https://i.ytimg.com/vi/11xNlOfZ9S0/maxresdefault.jpg"
+                alt="Xôi Ngũ Sắc"
+                class="relative z-10 w-[400px] h-[400px] object-cover rounded-3xl shadow-2xl transform hover:scale-105 transition-transform duration-500"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <button
+          @click="prevSlide"
+          class="absolute left-8 top-1/2 -translate-y-1/2 z-30 bg-white/90 hover:bg-white p-4 rounded-full shadow-xl hover:shadow-2xl transform hover:scale-110 transition-all duration-300"
+        >
+          <svg class="w-8 h-8 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="3"
+              d="M15 19l-7-7 7-7"
+            ></path>
+          </svg>
+        </button>
+        <button
+          @click="nextSlide"
+          class="absolute right-8 top-1/2 -translate-y-1/2 z-30 bg-white/90 hover:bg-white p-4 rounded-full shadow-xl hover:shadow-2xl transform hover:scale-110 transition-all duration-300"
+        >
+          <svg class="w-8 h-8 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="3"
+              d="M9 5l7 7-7 7"
+            ></path>
+          </svg>
+        </button>
+
+        <!-- Slide Indicators -->
+        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex space-x-3">
+          <button
+            v-for="(_, index) in 5"
+            :key="index"
+            @click="currentSlide = index"
+            :class="[
+              'h-3 rounded-full transition-all duration-300',
+              currentSlide === index ? 'w-12 bg-orange-600' : 'w-3 bg-white/50 hover:bg-white/80',
+            ]"
+          ></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Info Section -->
+    <section class="py-4 bg-gradient-to-r from-orange-600 to-red-600 text-white">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+          <div class="flex items-center justify-center space-x-3">
+            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
+              <path
+                fill-rule="evenodd"
+                d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
+                clip-rule="evenodd"
+              ></path>
+            </svg>
+            <p class="font-bold text-lg">Hương vị thiên nhiên - Sức khỏe trọn vẹn</p>
+          </div>
+          <div class="flex items-center justify-center space-x-3">
+            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fill-rule="evenodd"
+                d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z"
+                clip-rule="evenodd"
+              ></path>
+            </svg>
+            <p class="font-bold text-lg">🚀 Giao hàng nhanh 30 phút</p>
+          </div>
+          <div class="flex items-center justify-center space-x-3">
+            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"
+              ></path>
+            </svg>
+            <p class="font-bold text-lg">💯 Cam kết 100% nguyên liệu sạch</p>
+          </div>
+        </div>
       </div>
     </section>
 
     <!-- Featured Dishes -->
-    <section id="thuc-don" class="py-20 bg-gradient-to-b from-gray-50 to-white">
+    <section id="thuc-don" class="py-20 bg-gradient-to-b from-orange-50 via-white to-gray-50">
       <div class="max-w-7xl mx-auto px-4">
         <div class="text-center mb-16 scroll-reveal">
-          <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Món Ăn Nổi Bật</h2>
-          <p class="text-xl md:text-2xl text-gray-600">Thưởng thức ẩm thực tây bắc tại Đà Nẵng</p>
+          <h2 class="text-5xl md:text-6xl font-black text-gray-900 mb-6">Món Ăn Nổi Bật</h2>
+          <p class="text-xl md:text-2xl text-gray-600 font-medium">
+            Thưởng thức ẩm thực Tây Bắc tại Đà Nẵng
+          </p>
           <div
-            class="mt-4 h-1 w-32 mx-auto bg-gradient-to-r from-transparent via-[#9f0909] to-transparent rounded-full"
+            class="mt-6 h-1.5 w-40 mx-auto bg-gradient-to-r from-orange-400 via-red-500 to-orange-400 rounded-full shadow-lg"
           ></div>
         </div>
 
@@ -591,18 +981,27 @@ watch(() => auth.token, autoFillUserInfo);
           <div
             v-for="(dish, index) in featuredDishes"
             :key="dish.id"
-            class="bg-white rounded-2xl overflow-hidden hover:shadow-2xl transition-all shadow-md hover-lift group animate-fade-in-up"
+            class="bg-white rounded-3xl overflow-hidden hover:shadow-2xl transition-all shadow-lg border-2 border-gray-100 hover:border-orange-200 hover-lift group animate-fade-in-up"
             :style="`animation-delay: ${index * 0.1}s`"
           >
-            <div class="h-48 rounded-2xl overflow-hidden m-4 mb-0 relative">
+            <div class="h-52 rounded-3xl overflow-hidden m-4 mb-0 relative">
               <img
                 :src="dish.imageUrl || resolveImage('/src/assets/img/logo.png')"
-                :alt="dish.name"
+                :alt="`Món ${dish.name} - ${dish.categoryName || 'Ẩm thực Hoa Ban'}`"
+                loading="lazy"
                 class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
               <div
                 class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
               ></div>
+              <!-- Best Seller badge -->
+              <div
+                v-if="dish.signature"
+                class="absolute top-3 left-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-1"
+              >
+                <span>⭐</span>
+                <span>Best Seller</span>
+              </div>
               <!-- Price badge -->
               <div
                 class="absolute top-3 right-3 bg-[#9f0909] text-white px-3 py-1.5 rounded-full text-sm font-bold shadow-lg"
@@ -623,14 +1022,14 @@ watch(() => auth.token, autoFillUserInfo);
 
               <button
                 @click="ui.openDish(dish.id)"
-                class="w-full bg-gradient-to-r from-[#9f0909] to-[#7a0707] hover:from-[#800808] hover:to-[#9f0909] text-white py-3 rounded-xl font-bold transition-all transform hover:scale-105 active:scale-95 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                class="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white py-3.5 rounded-full font-bold text-base transition-all transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
               >
                 <span>Xem chi tiết</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    stroke-width="2"
+                    stroke-width="2.5"
                     d="M13 7l5 5m0 0l-5 5m5-5H6"
                   ></path>
                 </svg>
@@ -642,7 +1041,7 @@ watch(() => auth.token, autoFillUserInfo);
         <div class="text-center animate-fade-in-up" style="animation-delay: 0.8s">
           <router-link
             to="/menu"
-            class="inline-flex items-center gap-3 bg-gradient-to-r from-[#9f0909] to-[#7a0707] hover:from-[#800808] hover:to-[#9f0909] text-white px-10 py-5 rounded-2xl font-bold text-lg transition-all transform hover:scale-105 active:scale-95 shadow-xl hover:shadow-2xl"
+            class="inline-flex items-center gap-3 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white px-12 py-5 rounded-full font-bold text-lg transition-all transform hover:scale-105 active:scale-95 shadow-xl hover:shadow-2xl"
           >
             <span>Xem thực đơn đầy đủ</span>
             <svg
@@ -654,7 +1053,7 @@ watch(() => auth.token, autoFillUserInfo);
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                stroke-width="2"
+                stroke-width="2.5"
                 d="M17 8l4 4m0 0l-4 4m4-4H3"
               />
             </svg>
@@ -664,15 +1063,15 @@ watch(() => auth.token, autoFillUserInfo);
     </section>
 
     <!-- Featured Combos -->
-    <section id="combo" class="py-20 bg-gradient-to-b from-white to-gray-50">
+    <section id="combo" class="py-20 bg-gradient-to-b from-amber-50 via-white to-orange-50">
       <div class="max-w-7xl mx-auto px-4">
         <div class="text-center mb-16 scroll-reveal">
-          <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Combo Đặc Biệt</h2>
-          <p class="text-xl md:text-2xl text-gray-600">
+          <h2 class="text-5xl md:text-6xl font-black text-gray-900 mb-6">Combo Đặc Biệt</h2>
+          <p class="text-xl md:text-2xl text-gray-600 font-medium">
             Tiết kiệm hơn khi đặt combo - Trải nghiệm trọn vẹn
           </p>
           <div
-            class="mt-4 h-1 w-32 mx-auto bg-gradient-to-r from-transparent via-[#9f0909] to-transparent rounded-full"
+            class="mt-6 h-1.5 w-40 mx-auto bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400 rounded-full shadow-lg"
           ></div>
         </div>
 
@@ -712,7 +1111,7 @@ watch(() => auth.token, autoFillUserInfo);
         <div class="text-center scroll-reveal">
           <router-link
             to="/combos"
-            class="inline-flex items-center gap-3 bg-gradient-to-r from-[#9f0909] to-[#7a0707] hover:from-[#800808] hover:to-[#9f0909] text-white px-10 py-5 rounded-2xl font-bold text-lg transition-all transform hover:scale-105 active:scale-95 shadow-xl hover:shadow-2xl"
+            class="inline-flex items-center gap-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white px-12 py-5 rounded-full font-bold text-lg transition-all transform hover:scale-105 active:scale-95 shadow-xl hover:shadow-2xl"
           >
             <span>Xem tất cả combo</span>
             <svg
@@ -724,7 +1123,7 @@ watch(() => auth.token, autoFillUserInfo);
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                stroke-width="2"
+                stroke-width="2.5"
                 d="M17 8l4 4m0 0l-4 4m4-4H3"
               />
             </svg>
@@ -733,19 +1132,17 @@ watch(() => auth.token, autoFillUserInfo);
       </div>
     </section>
     <!-- Section: Về chúng tôi -->
-    <section class="mx-auto max-w-6xl px-4 py-20 bg-gradient-to-b from-gray-50 to-white">
+    <section
+      class="mx-auto max-w-7xl px-4 py-20 bg-gradient-to-b from-blue-50 via-white to-gray-50"
+    >
       <!-- Title -->
       <div class="text-center mb-16 scroll-reveal">
-        <h2
-          class="font-['Inknut_Antiqua',serif] text-4xl md:text-5xl font-bold tracking-tight text-gray-900"
-        >
-          Về chúng tôi
-        </h2>
-        <p class="mt-4 text-xl md:text-2xl text-gray-600">
+        <h2 class="text-5xl md:text-6xl font-black text-gray-900 mb-6">Về Chúng Tôi</h2>
+        <p class="text-xl md:text-2xl text-gray-600 font-medium">
           Ẩm thực thực dưỡng – cân bằng & tinh tế
         </p>
         <div
-          class="mt-4 h-1 w-32 mx-auto bg-gradient-to-r from-transparent via-[#9f0909] to-transparent rounded-full"
+          class="mt-6 h-1.5 w-40 mx-auto bg-gradient-to-r from-blue-400 via-cyan-500 to-blue-400 rounded-full shadow-lg"
         ></div>
       </div>
 
@@ -760,6 +1157,7 @@ watch(() => auth.token, autoFillUserInfo);
               class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
               src="https://i.ytimg.com/vi/11xNlOfZ9S0/maxresdefault.jpg"
               alt="Xôi ngũ sắc - Ẩm thực thực dưỡng"
+              loading="lazy"
             />
             <div
               class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -788,6 +1186,7 @@ watch(() => auth.token, autoFillUserInfo);
               class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
               src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=100&w=2000&auto=format&fit=crop&ixlib=rb-4.0.3"
               alt="Toàn cảnh nhà hàng Hoa Ban về đêm"
+              loading="lazy"
             />
             <div
               class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -815,6 +1214,7 @@ watch(() => auth.token, autoFillUserInfo);
               class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
               src="https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?q=80&w=1200&auto=format&fit=crop"
               alt="Phòng ăn riêng tư"
+              loading="lazy"
             />
             <div
               class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -842,6 +1242,7 @@ watch(() => auth.token, autoFillUserInfo);
               class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
               src="https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=1200&auto=format&fit=crop"
               alt="Nơi gắn kết"
+              loading="lazy"
             />
             <div
               class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -917,6 +1318,7 @@ watch(() => auth.token, autoFillUserInfo);
               class="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
               src="https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=1400&auto=format&fit=crop"
               alt="Phòng riêng Hoa Ban"
+              loading="lazy"
             />
             <!-- Overlay gradient khi hover -->
             <div
@@ -1052,8 +1454,9 @@ watch(() => auth.token, autoFillUserInfo);
               >
                 <img
                   :src="resolveImage('/src/assets/img/logo.png')"
-                  alt="Hoa Ban"
+                  alt="Hoa Ban Restaurant Logo"
                   class="w-12 h-12 rounded-xl"
+                  loading="lazy"
                 />
               </div>
               <div>
@@ -1252,7 +1655,7 @@ watch(() => auth.token, autoFillUserInfo);
                     >
                       <option value="" class="text-gray-500">Chọn khu vực</option>
                       <option
-                        v-for="areaData in areas.filter((a) => a.status === 'ACTIVE')"
+                        v-for="areaData in areas.filter((a: AreaDto) => a.status === 'ACTIVE')"
                         :key="areaData.id"
                         :value="areaData.name"
                         class="text-gray-800"

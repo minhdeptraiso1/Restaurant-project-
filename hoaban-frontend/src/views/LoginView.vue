@@ -31,12 +31,27 @@ const onSubmit = async () => {
   try {
     await auth.login(email.value, password.value);
     toast.success("Đăng nhập thành công");
-    // điều hướng theo vai trò
+
+    // Lấy redirect URL từ query params
+    const redirectPath = route.query.redirect as string;
     const role = auth.user?.role;
-    if (role === "ADMIN") return router.push({ name: "admin-dashboard" });
-    // Staff không còn dashboard riêng, chuyển về home
-    const redirect = (route.query.redirect as string) || ({ name: "home" } as any);
-    await router.push(redirect);
+
+    // Nếu có redirect URL, kiểm tra xem role có quyền truy cập không
+    if (redirectPath) {
+      // Admin luôn redirect về dashboard nếu không phải là open-order
+      if (role === "ADMIN" && !redirectPath.includes("/open-order")) {
+        return router.push({ name: "admin-dashboard" });
+      }
+      // Với các role khác hoặc trang open-order, redirect về trang ban đầu
+      return router.push(redirectPath);
+    }
+
+    // Không có redirect URL, điều hướng theo vai trò mặc định
+    if (role === "ADMIN") {
+      return router.push({ name: "admin-dashboard" });
+    }
+
+    return router.push({ name: "home" });
   } catch (e: any) {
     console.error("Login error:", e);
     toast.error(e?.friendlyMessage || e?.response?.data?.message || "Đăng nhập thất bại");
@@ -71,7 +86,30 @@ const onSubmit = async () => {
 
     <!-- Login Form Container -->
     <div class="relative z-10 min-h-screen flex items-center justify-center px-4 py-8">
-      <div class="glass-card rounded-3xl p-10 w-full max-w-md shadow-2xl border border-white/10">
+      <div
+        class="glass-card rounded-3xl p-10 w-full max-w-md shadow-2xl border border-white/10 relative"
+      >
+        <!-- Close Button (Back to Home) -->
+        <router-link
+          to="/"
+          class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all duration-200 group"
+          title="Quay lại trang chủ"
+        >
+          <svg
+            class="w-5 h-5 group-hover:scale-110 transition-transform"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </router-link>
+
         <!-- Restaurant Logo -->
         <div class="text-center mb-8">
           <div

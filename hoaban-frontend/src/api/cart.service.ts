@@ -1,17 +1,14 @@
 import http from "./http";
+import type { Cart, AddCartItemRequest, UpdateCartItemRequest } from "@/types/cart.types";
 
-/** Lấy hoặc tạo giỏ hàng DELIVERY */
-export const getCart = () => http.get("/v1/cart");
+export const getCart = () => http.get<Cart>("/v1/cart");
 
-/** Thêm item vào giỏ */
-export const addItem = (p: { itemType: "DISH" | "COMBO"; itemId: string; quantity: number }) =>
-  http.post("/v1/cart/items", p);
+export const addItem = (payload: AddCartItemRequest) => http.post<Cart>("/v1/cart/items", payload);
 
-/** Update item (số lượng) */
-export const updateItem = (itemId: string, quantity: number) =>
-  http.patch(`/v1/cart/items/${itemId}`, { quantity });
+export const updateItem = (itemId: string, payload: UpdateCartItemRequest) =>
+  http.patch<Cart>(`/v1/cart/items/${itemId}`, payload);
 
-/** Xóa 1 item */
-export const removeItem = (itemId: string) => http.delete(`/v1/cart/items/${itemId}`);
+export const removeItem = (itemId: string) => http.delete<Cart>(`/v1/cart/items/${itemId}`);
 
-
+/** Xóa toàn bộ giỏ hàng */
+export const clearCart = () => http.delete(`/v1/cart/items`);

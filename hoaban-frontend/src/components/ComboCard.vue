@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { useCartStore } from "@/stores/cart";
 import { useUiStore } from "@/stores/ui";
+import { useAuthStore } from "@/stores/auth";
+import { useRouter } from "vue-router";
+import { toast } from "vue3-toastify";
 
 const props = defineProps<{
   id: string;
@@ -20,8 +23,15 @@ const props = defineProps<{
 
 const cart = useCartStore();
 const ui = useUiStore();
+const auth = useAuthStore();
+const router = useRouter();
 
 function addToCart(comboId: string) {
+  if (!auth.token) {
+    toast.info("Vui lòng đăng nhập để thêm combo vào giỏ hàng");
+    router.push({ name: "login", query: { redirect: router.currentRoute.value.fullPath } });
+    return;
+  }
   cart.addItem("COMBO", comboId);
 }
 
@@ -62,7 +72,8 @@ function getStatusColor(status?: string) {
       <img
         v-if="imageUrl"
         :src="imageUrl"
-        :alt="name"
+        :alt="`Combo ${name} - Hoa Ban Restaurant`"
+        loading="lazy"
         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
       />
       <div v-else class="w-full h-full flex items-center justify-center text-gray-400">

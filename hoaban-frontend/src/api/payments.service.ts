@@ -4,15 +4,13 @@ import http from "./http";
 export interface VNPayCreateResponse {
   code: string;
   message: string;
-  paymentUrl: string;
-  txnRef: string; // KHÔNG phải transactionId
+  url: string;
 }
 
 export interface VNPayReturnResponse {
   success: boolean;
+  verified: boolean;
   orderId: string;
-  amount: number;
-  transactionId: string;
   responseCode: string;
   message: string;
 }
@@ -23,16 +21,20 @@ export interface VNPayIPNResponse {
 }
 
 // VNPay API functions
-export const createVNPayPayment = (orderId: string, params?: any) =>
-  http.post(`/v1/payments/vnpay/create/${orderId}`, params).then((res) => {
-    return res.data?.data ?? res.data; // hỗ trợ mọi cấu trúc
-  });
+export const createVNPayPayment = (orderId: string) =>
+  http
+    .post<VNPayCreateResponse>("/v1/payments/create_payment", {
+      orderId,
+      bankCode: null,
+      language: "vn",
+    })
+    .then((res) => res.data ?? res);
 
 export const handleVNPayReturn = (params: Record<string, string>) =>
-  http.get<VNPayReturnResponse>("/v1/payments/vnpay/return", { params });
+  http.get<VNPayReturnResponse>("/v1/payments/vnpay_return", { params });
 
 export const handleVNPayIPN = (params: Record<string, string>) =>
-  http.get<VNPayIPNResponse>("/v1/payments/vnpay/ipn", { params });
+  http.get<VNPayIPNResponse>("/v1/payments/ipn", { params });
 
 // Payment method types
 export type PaymentMethod = "CASH" | "VNPAY";
@@ -45,13 +47,11 @@ export const processPayment = async (
   additionalData?: any
 ) => {
   if (method === "VNPAY") {
-    const payment = await createVNPayPayment(orderId, additionalData);
-
-    if (!payment?.paymentUrl) {
-      throw new Error("Không nhận được paymentUrl từ VNPay API");
+    const res = await createVNPayPayment(orderId);
+    if (!res?.url) {
+      throw new Error("Không nhận được payment URL từ VNPay API");
     }
-
-    window.location.href = payment.paymentUrl;
+    window.location.href = res.url; // MUST REDIRECT
     return;
   }
 

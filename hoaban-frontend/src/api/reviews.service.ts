@@ -1,22 +1,8 @@
 import http from "./http";
 import type { ApiResponse } from "@/types";
+import type { Review, CreateReviewRequest } from "@/types/review.types";
 
-export interface Review {
-  id: string;
-  customerName: string;
-  rating: number;
-  comment?: string;
-  createdAt: string;
-  avatarUrl?: string;
-}
-
-export interface CreateReviewReq {
-  orderId: string;
-  rating: number;
-  comment?: string;
-}
-
-export function createReview(data: CreateReviewReq) {
+export function createReview(data: CreateReviewRequest) {
   return http.post<ApiResponse<Review>>("/v1/reviews", data);
 }
 

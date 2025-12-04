@@ -1,6 +1,22 @@
 // Central export point for shared application types (DTOs/Responses)
 // Import and re-export types from API services as needed to keep imports tidy
 
+// Re-export domain types
+export * from "./area.types";
+export * from "./auth.types";
+export * from "./dish.types";
+export * from "./category.types";
+export * from "./combo.types";
+export * from "./reservation.types";
+export * from "./table.types";
+export * from "./voucher.types";
+export * from "./user.types";
+export * from "./order.types";
+export * from "./cart.types";
+export * from "./payment.types";
+export * from "./loyalty.types";
+export * from "./review.types";
+
 export type ApiListResponse<T> = {
   data: T[];
   total?: number;

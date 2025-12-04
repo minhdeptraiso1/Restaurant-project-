@@ -1,23 +1,11 @@
 import http from "./http";
-export type AreaStatus = "ACTIVE" | "INACTIVE";
+import type { AreaDto, CreateAreaReq } from "@/types/area.types";
 
-export interface AreaDto {
-  id: string;
-  name: string;
-  description?: string;
-  status: AreaStatus;
-  createdAt?: string;
-  updatedAt?: string;
-}
+export const listAreas = () => http.get<AreaDto[]>("/v1/areas");
 
-export interface CreateAreaReq {
-  name: string;
-  description?: string;
-  status?: AreaStatus;
-}
-export const listAreas = () => http.get("/v1/areas");
-export const createArea = (p: CreateAreaReq) => http.post("/v1/areas", p);
-export const updateArea = (id: string, req: CreateAreaReq) =>
-  http.put<AreaDto>(`/v1/areas/${id}`, req);
+export const createArea = (payload: CreateAreaReq) => http.post<AreaDto>("/v1/areas", payload);
+
+export const updateArea = (id: string, payload: CreateAreaReq) =>
+  http.put<AreaDto>(`/v1/areas/${id}`, payload);
 
 export const deleteArea = (id: string) => http.delete<void>(`/v1/areas/${id}`);

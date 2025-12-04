@@ -98,7 +98,8 @@ onUnmounted(() => {
           >
             <img
               :src="image"
-              :alt="`Combo Banner ${index + 1}`"
+              :alt="`Combo Banner ${index + 1} - Hoa Ban Restaurant`"
+              loading="lazy"
               class="w-full h-full object-cover"
             />
             <div class="absolute inset-0 bg-black/40"></div>

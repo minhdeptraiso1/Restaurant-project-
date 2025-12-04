@@ -1,32 +1,20 @@
 import http from "./http";
+import type { Dish, CreateDishRequest, UpdateDishRequest } from "@/types/dish.types";
+import type { PaginatedResponse } from "@/types/user.types";
 
-export const listDishesAdmin = (params?: {
+export interface ListDishesAdminParams {
   page?: number;
   size?: number;
   sortBy?: string;
   direction?: string;
-}) => http.get("/v1/dishes/all", { params });
-export const createDish = (p: {
-  categoryId: string;
-  name: string;
-  description?: string;
-  unit: string;
-  price: number;
-  imageUrl?: string;
-  status?: string;
-}) => http.post("/v1/dishes", p);
+}
 
-export const updateDish = (
-  id: string,
-  p: {
-    categoryId?: string;
-    name?: string;
-    description?: string;
-    unit?: string;
-    price?: number;
-    imageUrl?: string;
-    status?: string;
-  }
-) => http.put(`/v1/dishes/${id}`, p);
+export const listDishesAdmin = (params?: ListDishesAdminParams) =>
+  http.get<PaginatedResponse<Dish>>("/v1/dishes/all", { params });
 
-export const deleteDish = (id: string) => http.delete(`/v1/dishes/${id}`);
+export const createDish = (payload: CreateDishRequest) => http.post<Dish>("/v1/dishes", payload);
+
+export const updateDish = (id: string, payload: UpdateDishRequest) =>
+  http.put<Dish>(`/v1/dishes/${id}`, payload);
+
+export const deleteDish = (id: string) => http.delete<void>(`/v1/dishes/${id}`);

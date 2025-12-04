@@ -2,6 +2,9 @@
 import { defineProps, computed } from "vue";
 import { useUiStore } from "@/stores/ui";
 import { useCartStore } from "@/stores/cart";
+import { useAuthStore } from "@/stores/auth";
+import { useRouter } from "vue-router";
+import { toast } from "vue3-toastify";
 
 const props = defineProps<{
   id: string;
@@ -13,10 +16,13 @@ const props = defineProps<{
   price: number;
   imageUrl?: string;
   status?: string;
+  signature?: boolean;
 }>();
 
 const ui = useUiStore();
 const cart = useCartStore();
+const auth = useAuthStore();
+const router = useRouter();
 
 const shortDesc = computed(() => (props.description ? props.description.slice(0, 80) : ""));
 
@@ -24,25 +30,23 @@ const unitText = computed(() => {
   switch (props.unit) {
     case "PORTION":
       return "Phần";
-    case "PIECE":
-      return "Miếng";
+    case "PLATE":
+      return "Dĩa";
     case "BOWL":
       return "Tô";
-    case "PLATE":
-      return "Đĩa";
-    case "CUP":
+    case "GLASS":
       return "Ly";
     default:
-      return "Suất";
+      return "Phần";
   }
 });
 
 const statusText = computed(() => {
   switch (props.status) {
     case "ACTIVE":
-      return "Còn hàng";
+      return "Hoạt động";
     case "INACTIVE":
-      return "Tạm hết";
+      return "Tạm dừng";
     default:
       return "Món ăn";
   }
@@ -53,13 +57,18 @@ const statusColor = computed(() => {
     case "ACTIVE":
       return "bg-green-100 text-green-800";
     case "INACTIVE":
-      return "bg-red-100 text-red-800";
+      return "bg-gray-100 text-gray-600";
     default:
       return "bg-gray-100 text-gray-600";
   }
 });
 
 function addToCart() {
+  if (!auth.token) {
+    toast.info("Vui lòng đăng nhập để thêm món vào giỏ hàng");
+    router.push({ name: "login", query: { redirect: router.currentRoute.value.fullPath } });
+    return;
+  }
   cart.add({ id: props.id, name: props.name, price: props.price, qty: 1 });
 }
 
@@ -75,10 +84,24 @@ function openDetail() {
   >
     <!-- Image -->
     <div class="h-48 bg-gray-100 overflow-hidden relative">
+      <!-- ✨ Best Seller Badge - Góc trái trên -->
+      <div
+        v-if="signature"
+        class="absolute top-3 left-3 z-20 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1"
+      >
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path
+            d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+          />
+        </svg>
+        Best Seller
+      </div>
+
       <img
         v-if="imageUrl"
         :src="imageUrl"
-        :alt="name"
+        :alt="`Món ${name} - ${categoryName || 'Ẩm thực Hoa Ban'}`"
+        loading="lazy"
         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
       />
       <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
@@ -115,10 +138,10 @@ function openDetail() {
         </div>
       </div>
 
-      <!-- Category badge -->
+      <!-- Category badge - Góc phải trên -->
       <div
         v-if="categoryName"
-        class="absolute top-3 left-3 bg-[#9f0909] text-white px-2 py-1 rounded-full text-xs font-medium"
+        class="absolute top-3 right-3 z-10 bg-[#9f0909] text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg"
       >
         {{ categoryName }}
       </div>
