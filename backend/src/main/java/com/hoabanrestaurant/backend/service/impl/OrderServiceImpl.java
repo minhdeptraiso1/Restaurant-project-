@@ -516,8 +516,14 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public int cleanEmptyOrders() {
         List<Order> emptyOrders = orderRepo.findAll().stream()
-                .filter(o -> (o.getTotal() == null || o.getTotal().compareTo(BigDecimal.ZERO) == 0)
-                        || itemRepo.findByOrder_Id(o.getId()).isEmpty())
+                .filter(o ->
+                        o.getStatus() == OrderStatus.OPEN &&   // chỉ xoá đơn trạng thái OPEN
+                                (
+                                        o.getTotal() == null ||
+                                                o.getTotal().compareTo(BigDecimal.ZERO) == 0 ||
+                                                itemRepo.findByOrder_Id(o.getId()).isEmpty()
+                                )
+                )
                 .toList();
 
         emptyOrders.forEach(order -> {
@@ -527,6 +533,7 @@ public class OrderServiceImpl implements OrderService {
 
         return emptyOrders.size();
     }
+
 
     @Override
     @Transactional

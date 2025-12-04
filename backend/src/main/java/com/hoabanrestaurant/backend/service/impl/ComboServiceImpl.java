@@ -3,6 +3,8 @@ package com.hoabanrestaurant.backend.service.impl;
 
 import com.hoabanrestaurant.backend.dto.request.CreateComboReq;
 import com.hoabanrestaurant.backend.dto.response.ComboDto;
+import com.hoabanrestaurant.backend.dto.response.DishDto;
+import com.hoabanrestaurant.backend.dto.response.SuggestedMenuDto;
 import com.hoabanrestaurant.backend.entity.Combo;
 import com.hoabanrestaurant.backend.entity.ComboItem;
 import com.hoabanrestaurant.backend.entity.Dish;
@@ -10,16 +12,22 @@ import com.hoabanrestaurant.backend.enums.ErrorCode;
 import com.hoabanrestaurant.backend.enums.MenuStatus;
 import com.hoabanrestaurant.backend.exception.BusinessException;
 import com.hoabanrestaurant.backend.mapper.ComboMapper;
+import com.hoabanrestaurant.backend.mapper.DishMapper;
 import com.hoabanrestaurant.backend.repository.ComboItemRepository;
 import com.hoabanrestaurant.backend.repository.ComboRepository;
 import com.hoabanrestaurant.backend.repository.DishRepository;
+import com.hoabanrestaurant.backend.repository.OrderItemRepository;
 import com.hoabanrestaurant.backend.service.ComboService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +41,8 @@ public class ComboServiceImpl implements ComboService {
     private final ComboItemRepository itemRepo;
     private final DishRepository dishRepo;
     private final ComboMapper mapper;
+    private final OrderItemRepository orderItemRepo;
+    private final DishMapper dishMapper;
 
     @Override
     @Transactional
@@ -170,7 +180,7 @@ public class ComboServiceImpl implements ComboService {
                 })
                 .toList();
     }
-    
+
     @Override
     public List<ComboDto> getAllbyAdmin() {
         List<Combo> combos = comboRepo.findAll();
@@ -204,6 +214,112 @@ public class ComboServiceImpl implements ComboService {
         java.math.BigDecimal s = java.math.BigDecimal.ZERO;
         for (Dish d : ds) s = s.add(d.getPrice().multiply(java.math.BigDecimal.valueOf(qty.get(d.getId()))));
         return s;
+    }
+
+
+    @Override
+    public List<DishDto> getSuggestedDishesForUser(UUID userId) {
+        int LIMIT = 4;
+
+        List<DishDto> result = new ArrayList<>();
+
+        // ===== 1) HISTORY =====
+        var freqRows = orderItemRepo.findDishFrequencyByUser(userId);
+        if (!freqRows.isEmpty()) {
+            result.addAll(buildDishesFromFrequency(freqRows, LIMIT));
+        }
+
+        // Nếu đủ 4 thì return luôn
+        if (result.size() >= LIMIT) return result.subList(0, LIMIT);
+
+        // ===== 2) SIGNATURE =====
+        var signatures = dishRepo.findTop4BySignatureTrueAndStatus(MenuStatus.ACTIVE);
+        for (var d : signatures) {
+            if (result.size() >= LIMIT) break;
+            if (result.stream().noneMatch(x -> x.id().equals(d.getId()))) {
+                result.add(dishMapper.toDto(d));
+            }
+        }
+
+        if (result.size() >= LIMIT) return result.subList(0, LIMIT);
+
+        // ===== 3) BEST SELLERS =====
+        var best = orderItemRepo.getBestSellers();
+        if (!best.isEmpty()) {
+            var bestList = buildDishesFromFrequency(best, 20); // lấy nhiều để lấp chỗ trống
+            for (var d : bestList) {
+                if (result.size() >= LIMIT) break;
+                if (result.stream().noneMatch(x -> x.id().equals(d.id()))) {
+                    result.add(d);
+                }
+            }
+        }
+
+        if (result.size() >= LIMIT) return result.subList(0, LIMIT);
+
+        // ===== 4) RANDOM =====
+        Pageable p = PageRequest.of(0, LIMIT * 2);
+        var randomDishes = dishRepo.findRandomActiveDishes(p);
+        for (var d : randomDishes) {
+            if (result.size() >= LIMIT) break;
+            if (result.stream().noneMatch(x -> x.id().equals(d.getId()))) {
+                result.add(dishMapper.toDto(d));
+            }
+        }
+
+        return result.subList(0, Math.min(result.size(), LIMIT));
+    }
+
+    /**
+     * Build DishDto từ danh sách tần suất
+     */
+    private List<DishDto> buildDishesFromFrequency(List<Object[]> rows, int limit) {
+        List<UUID> ids = rows.stream()
+                .map(r -> (UUID) r[0])
+                .toList();
+
+        var dishes = dishRepo.findAllById(ids);
+
+        // giữ nguyên thứ tự theo freq
+        dishes.sort(Comparator.comparingInt(d -> ids.indexOf(d.getId())));
+
+        return dishes.stream()
+                .filter(d -> d.getStatus() == MenuStatus.ACTIVE)
+                .limit(limit)
+                .map(dishMapper::toDto)
+                .toList();
+    }
+
+    @Override
+    public List<ComboDto> getSuggestedCombos() {
+        Pageable limit = PageRequest.of(0, 4);
+        var combos = comboRepo.findRandomCombos(limit);
+
+        return combos.stream().map(c -> {
+            var items = itemsOf(c.getId());
+            var suggested = suggestedSum(items);
+            var base = mapper.toDto(c);
+
+            return new ComboDto(
+                    base.id(),
+                    base.name(),
+                    base.description(),
+                    base.price(),
+                    base.imageUrl(),
+                    base.status(),
+                    items,
+                    suggested
+            );
+        }).toList();
+    }
+
+
+    @Override
+    public SuggestedMenuDto getSuggestedMenu(Jwt jwt) {
+        UUID uid = UUID.fromString(jwt.getClaimAsString("uid"));
+        var dishes = getSuggestedDishesForUser(uid);
+        var combos = getSuggestedCombos();
+        return new SuggestedMenuDto(dishes, combos);
     }
 
 

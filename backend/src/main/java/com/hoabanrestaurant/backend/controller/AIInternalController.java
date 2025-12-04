@@ -1,16 +1,22 @@
 package com.hoabanrestaurant.backend.controller;
 
+import com.hoabanrestaurant.backend.dto.request.CreateReservationReq;
+import com.hoabanrestaurant.backend.dto.response.ReservationDto;
 import com.hoabanrestaurant.backend.service.ComboService;
 import com.hoabanrestaurant.backend.service.DishService;
 import com.hoabanrestaurant.backend.service.ReservationService;
 import com.hoabanrestaurant.backend.service.TableService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/internal/ai")
@@ -46,4 +52,16 @@ public class AIInternalController {
         // Controller chỉ việc gọi
         return reservationService.getAvailableSlots();
     }
+
+    @PostMapping("/reservation/create")
+    public ReservationDto aiCreateReservation(
+            @RequestParam String sessionId,
+            @RequestParam UUID userId,
+            @RequestBody CreateReservationReq req
+    ) {
+        System.out.println("AI creating reservation for sessionId=" + sessionId + ", userId=" + userId);
+        return reservationService.create(userId, req);
+    }
+
+
 }

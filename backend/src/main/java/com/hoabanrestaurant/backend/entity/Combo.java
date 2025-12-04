@@ -24,7 +24,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Combo {
+public class
+Combo {
     @Id
     private UUID id;
 

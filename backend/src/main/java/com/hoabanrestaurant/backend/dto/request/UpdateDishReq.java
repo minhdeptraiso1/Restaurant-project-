@@ -7,13 +7,16 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 public record UpdateDishReq(
+        @NotNull UUID categoryId,
         @NotBlank String name,
         String description,
         @NotNull Unit unit,
         @NotNull @DecimalMin(value = "0.0", inclusive = true) BigDecimal price,
         String imageUrl,
-        @NotNull MenuStatus status
+        @NotNull MenuStatus status,
+        @NotNull Boolean signature
 ) {
 }

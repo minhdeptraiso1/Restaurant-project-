@@ -11,6 +11,7 @@ import java.util.List;
 public interface DishMapper {
     @Mapping(target = "categoryId", source = "category.id")
     @Mapping(target = "categoryName", source = "category.name")
+    @Mapping(target = "signature", source = "signature")
     DishDto toDto(Dish d);
 
     List<DishDto> toDtoList(List<Dish> d);

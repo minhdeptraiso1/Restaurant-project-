@@ -1,7 +1,6 @@
 package com.hoabanrestaurant.backend.controller;
 
 import com.hoabanrestaurant.backend.dto.request.VNPayReq;
-import com.hoabanrestaurant.backend.dto.response.VNPayResponse;
 import com.hoabanrestaurant.backend.service.PaymentService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -12,26 +11,31 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/v1/payments")
 @RequiredArgsConstructor
 public class PaymentController {
 
-    private final PaymentService paymentService;
+    private final PaymentService vnPayService;
 
-    @PostMapping("/create")
-    public VNPayResponse create(HttpServletRequest request, @RequestBody VNPayReq order) {
-        return paymentService.createPayment(request, order);
+    @PostMapping("/create_payment")
+    public ResponseEntity<?> createPayment(HttpServletRequest req, @RequestBody VNPayReq dto) throws Exception {
+        return ResponseEntity.ok(vnPayService.createPayment(req, dto));
     }
 
-    @GetMapping("/return")
-    public ResponseEntity<String> vnpReturn(HttpServletRequest req) {
-        paymentService.handleReturn(req);
-        return ResponseEntity.ok("Payment success!");
+    @GetMapping("/vnpay_return")
+    public ResponseEntity<?> returnUrl(HttpServletRequest request) {
+        Map<String, Object> result = vnPayService.processReturnUrl(request);
+
+        boolean success = (boolean) result.get("success");
+
+        if (success) {
+            return ResponseEntity.ok(result);
+        } else {
+            return ResponseEntity.badRequest().body(result);
+        }
     }
 
-    @GetMapping("/ipn")
-    public ResponseEntity<String> ipn(HttpServletRequest req) {
-        return ResponseEntity.ok(paymentService.handleIPN(req));
-    }
 }

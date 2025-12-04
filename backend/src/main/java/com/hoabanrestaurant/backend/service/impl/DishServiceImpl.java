@@ -62,6 +62,9 @@ public class DishServiceImpl implements DishService {
         d.setPrice(req.price());
         d.setImageUrl(req.imageUrl());
         d.setStatus(req.status());
+        if (req.signature() != null) {
+            d.setSignature(req.signature());
+        }
         return mapper.toDto(dishRepo.save(d));
     }
 

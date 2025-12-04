@@ -3,11 +3,14 @@ package com.hoabanrestaurant.backend.controller;
 
 import com.hoabanrestaurant.backend.dto.request.CreateComboReq;
 import com.hoabanrestaurant.backend.dto.response.ComboDto;
+import com.hoabanrestaurant.backend.dto.response.SuggestedMenuDto;
 import com.hoabanrestaurant.backend.exception.ApiResponse;
 import com.hoabanrestaurant.backend.service.ComboService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -60,4 +63,11 @@ public class ComboController {
         service.delete(id);
         return ApiResponse.ok("Xóa combo thành công");
     }
+
+    //recoment system goi y mon theo lich su an uong
+    @GetMapping("/suggested")
+    public ApiResponse<SuggestedMenuDto> getSuggestedMenu(@AuthenticationPrincipal Jwt jwt) {
+        return ApiResponse.ok(service.getSuggestedMenu(jwt));
+    }
+
 }

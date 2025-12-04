@@ -51,6 +51,10 @@ public class Dish {
 
     private String imageUrl;
 
+    @Column(name = "is_signature")
+    private boolean signature;
+
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default

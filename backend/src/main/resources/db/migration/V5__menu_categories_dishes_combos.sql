@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS dishes (
     price        NUMERIC(12,2) NOT NULL CHECK (price >= 0),
     status       TEXT NOT NULL DEFAULT 'ACTIVE',  -- ACTIVE/INACTIVE
     image_url    TEXT,
+    is_signature BOOLEAN DEFAULT FALSE,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(category_id, name)

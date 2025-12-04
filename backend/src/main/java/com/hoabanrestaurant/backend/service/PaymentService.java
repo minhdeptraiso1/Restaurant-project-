@@ -1,14 +1,15 @@
 package com.hoabanrestaurant.backend.service;
 
 import com.hoabanrestaurant.backend.dto.request.VNPayReq;
-import com.hoabanrestaurant.backend.dto.response.VNPayResponse;
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.util.Map;
+
 public interface PaymentService {
-    VNPayResponse createPayment(HttpServletRequest request, VNPayReq reqBody);
+    Map<String, String> createPayment(HttpServletRequest req, VNPayReq dto);
 
-    String handleIPN(HttpServletRequest request);
+    Map<String, Object> processReturnUrl(HttpServletRequest request);
 
-    void handleReturn(HttpServletRequest request);
+
 }
 

@@ -2,6 +2,9 @@ package com.hoabanrestaurant.backend.service;
 
 import com.hoabanrestaurant.backend.dto.request.CreateComboReq;
 import com.hoabanrestaurant.backend.dto.response.ComboDto;
+import com.hoabanrestaurant.backend.dto.response.DishDto;
+import com.hoabanrestaurant.backend.dto.response.SuggestedMenuDto;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.List;
 import java.util.Map;
@@ -21,5 +24,11 @@ public interface ComboService {
     void delete(UUID comboId);
 
     List<Map<String, Object>> getAll();
+
+    List<DishDto> getSuggestedDishesForUser(UUID userId);
+
+    List<ComboDto> getSuggestedCombos();
+
+    SuggestedMenuDto getSuggestedMenu(Jwt jwt);
 
 }

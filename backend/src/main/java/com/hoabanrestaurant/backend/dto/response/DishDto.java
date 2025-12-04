@@ -9,6 +9,6 @@ import java.util.UUID;
 public record DishDto(
         UUID id, UUID categoryId, String categoryName,
         String name, String description, Unit unit,
-        BigDecimal price, String imageUrl, MenuStatus status
+        BigDecimal price, String imageUrl, Boolean signature, MenuStatus status
 ) {
 }
