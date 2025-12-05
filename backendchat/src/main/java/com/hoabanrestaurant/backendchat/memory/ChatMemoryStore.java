@@ -1,36 +1,24 @@
 package com.hoabanrestaurant.backendchat.memory;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
 import java.util.List;
 
-@Component
-@RequiredArgsConstructor
-public class ChatMemoryStore {
+public interface ChatMemoryStore {
 
-    private final RedisTemplate<String, String> redis;
+    void addUserMessage(String sessionId, String msg);
 
-    private String key(String sessionId) {
-        return "chat:session:" + sessionId;
-    }
+    void addAiMessage(String sessionId, String msg);
 
-    public void addUserMessage(String sessionId, String msg) {
-        redis.opsForList().rightPush(key(sessionId), "USER: " + msg);
-    }
+    List<String> getHistory(String sessionId);
 
-    public void addAiMessage(String sessionId, String msg) {
-        redis.opsForList().rightPush(key(sessionId), "AI: " + msg);
-    }
+    void clear(String sessionId);
 
-    public List<String> getHistory(String sessionId) {
-        List<String> history = redis.opsForList().range(key(sessionId), 0, -1);
-        return history != null ? history : new ArrayList<>();
-    }
+    void savePendingBooking(String sessionId, String json);
 
-    public void clear(String sessionId) {
-        redis.delete(key(sessionId));
-    }
+    String getPendingBooking(String sessionId);
+
+    void saveConfirmKeyword(String sessionId, String keyword);
+
+    String getConfirmKeyword(String sessionId);
+
+    void clearConfirmKeyword(String sessionId);
 }

@@ -1,4 +1,6 @@
 package com.hoabanrestaurant.backendchat.dto;
 
-public record ChatReq(String sessionId, String message) {
+import java.util.UUID;
+
+public record ChatReq(String sessionId, UUID userId, String message) {
 }

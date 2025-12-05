@@ -21,4 +21,6 @@ public class ChatAiController {
     public ResponseEntity<ChatRes> chat(@RequestBody ChatReq req) throws JsonProcessingException {
         return ResponseEntity.ok(chatAIService.process(req));
     }
+
+
 }
