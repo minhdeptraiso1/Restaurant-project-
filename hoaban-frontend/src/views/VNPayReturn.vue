@@ -157,12 +157,26 @@ const retryPayment = () => {
 
 onMounted(async () => {
   try {
+    // Notify other tabs (checkout) to redirect here
+    localStorage.setItem("vnpayPaymentComplete", window.location.href);
+    setTimeout(() => localStorage.removeItem("vnpayPaymentComplete"), 1000);
+
     // Get all query parameters from URL
     const queryParams = { ...route.query } as Record<string, string>;
 
+    // Extract amount and transaction info from VNPay query params
+    const vnpAmount = queryParams.vnp_Amount ? parseInt(queryParams.vnp_Amount) / 100 : 0;
+    const vnpTransactionNo = queryParams.vnp_TransactionNo || queryParams.vnp_BankTranNo || "N/A";
+
     // Call VNPay return API
     const response = await handleVNPayReturn(queryParams);
-    paymentResult.value = response.data;
+
+    // Merge response with query params data
+    paymentResult.value = {
+      ...response.data,
+      amount: vnpAmount,
+      transactionId: vnpTransactionNo,
+    };
 
     if (response.data.success) {
       // Payment successful - clear local cart
@@ -188,6 +202,7 @@ onMounted(async () => {
     console.error("VNPay return error:", error);
     paymentResult.value = {
       success: false,
+      verified: false,
       orderId: "",
       amount: 0,
       transactionId: "",

@@ -15,11 +15,6 @@ export interface VNPayReturnResponse {
   message: string;
 }
 
-export interface VNPayIPNResponse {
-  success: boolean;
-  message: string;
-}
-
 // VNPay API functions
 export const createVNPayPayment = (orderId: string) =>
   http
@@ -32,9 +27,6 @@ export const createVNPayPayment = (orderId: string) =>
 
 export const handleVNPayReturn = (params: Record<string, string>) =>
   http.get<VNPayReturnResponse>("/v1/payments/vnpay_return", { params });
-
-export const handleVNPayIPN = (params: Record<string, string>) =>
-  http.get<VNPayIPNResponse>("/v1/payments/ipn", { params });
 
 // Payment method types
 export type PaymentMethod = "CASH" | "VNPAY";

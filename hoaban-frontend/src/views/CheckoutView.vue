@@ -250,11 +250,12 @@ const submit = async () => {
       localStorage.setItem("vnpayOrderId", orderId);
 
       // Generate QR code for the payment URL
+      const paymentUrl = vnpayResponse.url || vnpayResponse.paymentUrl;
       const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
-        vnpayResponse.paymentUrl
+        paymentUrl
       )}`;
       vnpayQRImage.value = qrCodeUrl;
-      vnpayPaymentUrl.value = vnpayResponse.paymentUrl;
+      vnpayPaymentUrl.value = paymentUrl;
 
       // Show VNPay QR modal
       showVNPayQR.value = true;
@@ -346,6 +347,23 @@ onMounted(async () => {
       localStorage.removeItem("selectedVoucher");
     }
   }
+
+  // Listen for VNPay payment completion from other tab
+  const handleStorageChange = (e: StorageEvent) => {
+    if (e.key === "vnpayPaymentComplete" && e.newValue) {
+      const returnUrl = e.newValue;
+      localStorage.removeItem("vnpayPaymentComplete");
+      // Redirect to VNPay return page
+      window.location.href = returnUrl;
+    }
+  };
+
+  window.addEventListener("storage", handleStorageChange);
+
+  // Cleanup
+  return () => {
+    window.removeEventListener("storage", handleStorageChange);
+  };
 });
 </script>
 
@@ -800,13 +818,13 @@ onMounted(async () => {
       v-if="showVNPayQR"
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto"
     >
-      <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative my-8">
+      <div class="bg-white rounded-xl shadow-2xl max-w-sm w-full p-4 relative my-4">
         <!-- Close Button -->
         <button
           @click="closeVNPayModal"
-          class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+          class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors"
         >
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -817,54 +835,41 @@ onMounted(async () => {
         </button>
 
         <!-- Header -->
-        <div class="text-center mb-6">
-          <div
-            class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4"
-          >
-            <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
-              />
-            </svg>
-          </div>
-          <h3 class="text-xl font-bold text-gray-900 mb-2">Thanh toán VNPay</h3>
-          <p class="text-gray-600">Quét mã QR hoặc mở link để thanh toán</p>
+        <div class="text-center mb-3">
+          <h3 class="text-lg font-bold text-gray-900 mb-1">Thanh toán VNPay</h3>
+          <p class="text-sm text-gray-600">Quét mã QR để thanh toán</p>
         </div>
 
         <!-- QR Code -->
-        <div class="text-center mb-6">
-          <div class="inline-block p-4 bg-white border-2 border-gray-200 rounded-xl">
+        <div class="text-center mb-3">
+          <div class="inline-block p-3 bg-white border-2 border-gray-200 rounded-xl">
             <img
               v-if="vnpayQRImage"
               :src="vnpayQRImage"
               alt="VNPay QR Code"
-              class="w-48 h-48 object-contain"
+              class="w-64 h-64 object-contain"
             />
-            <div v-else class="w-48 h-48 bg-gray-100 rounded-lg flex items-center justify-center">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+            <div v-else class="w-64 h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+              <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500"></div>
             </div>
           </div>
-          <p class="text-sm text-gray-500 mt-2">Sử dụng app VNPay hoặc banking để quét</p>
         </div>
 
         <!-- Payment Amount -->
-        <div class="bg-gray-50 rounded-lg p-4 mb-6">
+        <div class="bg-gray-50 rounded-lg p-2.5 mb-3">
           <div class="flex justify-between items-center">
-            <span class="text-gray-600">Số tiền thanh toán:</span>
-            <span class="font-bold text-xl text-red-600">{{ formatCurrency(total) }}</span>
+            <span class="text-sm text-gray-600">Số tiền:</span>
+            <span class="font-bold text-lg text-red-600">{{ formatCurrency(total) }}</span>
           </div>
         </div>
 
         <!-- Action Buttons -->
-        <div class="space-y-3">
+        <div class="space-y-2">
           <button
             @click="openVNPayPayment"
-            class="w-full bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            class="w-full bg-red-600 hover:bg-red-700 text-white py-2.5 px-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
           >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -877,9 +882,9 @@ onMounted(async () => {
 
           <button
             @click="copyVNPayUrl"
-            class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 px-6 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 py-2.5 px-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
           >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -892,22 +897,13 @@ onMounted(async () => {
         </div>
 
         <!-- Instructions -->
-        <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h4 class="font-medium text-blue-900 mb-2">Hướng dẫn thanh toán:</h4>
-          <ol class="text-sm text-blue-800 space-y-1">
-            <li>1. Mở app VNPay hoặc app ngân hàng</li>
-            <li>2. Chọn tính năng quét mã QR</li>
-            <li>3. Quét mã QR phía trên</li>
-            <li>4. Xác nhận thanh toán</li>
-            <li>5. Bạn sẽ được chuyển về trang xác nhận</li>
+        <div class="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-2.5">
+          <h4 class="font-medium text-sm text-blue-900 mb-1.5">Hướng dẫn:</h4>
+          <ol class="text-xs text-blue-800 space-y-0.5">
+            <li>1. Mở app VNPay/banking</li>
+            <li>2. Quét mã QR phía trên</li>
+            <li>3. Xác nhận thanh toán</li>
           </ol>
-        </div>
-
-        <!-- Auto-redirect notice -->
-        <div class="mt-4 text-center">
-          <p class="text-xs text-gray-500">
-            💡 Sau khi thanh toán thành công, bạn sẽ tự động được chuyển về trang xác nhận
-          </p>
         </div>
       </div>
     </div>
