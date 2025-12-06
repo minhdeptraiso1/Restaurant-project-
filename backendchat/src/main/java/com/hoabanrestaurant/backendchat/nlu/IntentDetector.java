@@ -143,7 +143,6 @@ public class IntentDetector {
                 text.contains("tan nao") ||
                 text.contains("mat tien") ||
                 text.contains("phi")) {
-
             return "ASK_PRICE";
         }
 
