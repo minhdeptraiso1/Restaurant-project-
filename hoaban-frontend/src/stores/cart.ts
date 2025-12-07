@@ -261,7 +261,7 @@ export const useCartStore = defineStore("cart", {
             // Single line, just update quantity
             const line = matchingLines[0];
             if (line) {
-              await cartApi.updateItem(line.id, qty);
+              await cartApi.updateItem(line.id, { quantity: qty });
             }
           }
         }
