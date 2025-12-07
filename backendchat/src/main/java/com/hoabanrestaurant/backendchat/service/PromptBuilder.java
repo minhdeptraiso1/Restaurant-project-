@@ -26,8 +26,6 @@ public class PromptBuilder {
     🕒 THỜI GIAN HIỆN TẠI (CONTEXT)
     =====================================================
     """);
-
-        // ✅ DÒNG QUAN TRỌNG NHẤT: DẠY AI BIẾT HÔM NAY LÀ NGÀY NÀO
         sb.append("Hôm nay là: ").append(currentDateTime).append("\n");
         sb.append("LƯU Ý: Nếu người dùng nói 'mai', 'tối nay', 'thứ 6 tuần này'... hãy tính toán ngày dựa trên thời gian hiện tại ở trên.\n\n");
 
@@ -80,7 +78,7 @@ public class PromptBuilder {
             "confirmText": "oke"
 
        → reply phải mô tả lại thông tin đặt bàn để người dùng xác nhận.
-       → Ví dụ: Khách nói "ngày mai", bạn phải trả về date="2025-12-05" (nếu hôm nay là 04), trong reply nói rõ "ngày 5/12".
+       → Ví dụ: Khách nói "ngày mai", bạn phải trả về date="2025-12-05" (nếu hôm nay là 7), trong reply nói rõ "ngày 8/12".
 
     =====================================================
     🎯 QUY TẮC CHO CÁC Ý ĐỊNH KHÁC

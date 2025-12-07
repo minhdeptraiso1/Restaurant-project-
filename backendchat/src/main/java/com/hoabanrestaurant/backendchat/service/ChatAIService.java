@@ -47,6 +47,8 @@ public class ChatAIService {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
+
+
     /**
      * ============================================================
      * LUỒNG XỬ LÝ CHÍNH CHO MỖI TIN NHẮN
@@ -97,7 +99,12 @@ public class ChatAIService {
 
         // Lưu lịch sử hội thoại
         memory.addUserMessage(req.sessionId(), req.message());
-        List<String> history = memory.getHistory(req.sessionId());
+        List<String> fullHistory = memory.getHistory(req.sessionId());
+        int limit = 6;
+
+        List<String> history = fullHistory.size() > limit
+                ? fullHistory.subList(fullHistory.size() - limit, fullHistory.size())
+                : fullHistory;
 
         // Lấy dữ liệu thực tế để đưa vào prompt
         var dishes = dataFetcher.fetchDishes();
