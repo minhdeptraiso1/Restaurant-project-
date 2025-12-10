@@ -42,7 +42,7 @@ Dự án được phát triển theo kiến trúc **Microservices** gồm:
 - Quản lý đơn hàng (xác nhận – xử lý – hoàn tất)  
 - Quản lý đặt bàn  
 - Gửi email thông báo  
-- Duyệt đơn khách theo realtime WebSocket  
+- Duyệt đơn khách 
 - Cập nhật trạng thái đơn  
 - Xử lý đặt bàn trong ngày  
 
@@ -50,15 +50,14 @@ Dự án được phát triển theo kiến trúc **Microservices** gồm:
 
 ## 📌 2. Kiến trúc dự án
 
-root/
-│── backend/ # Spring Boot API chính
-│── backendchat/ # Spring Boot AI Chat microservice
-│── hoaban-frontend/ # Vue.js giao diện
-│── docker-compose.yml
-│── README.md
+-root/
+-│── backend/ # Spring Boot API chính
+-│── backendchat/ # Spring Boot AI Chat microservice
+-│── hoaban-frontend/ # Vue.js giao diện
+-│── docker-compose.yml
+-│── README.md
 
-markdown
-Sao chép mã
+
 
 ---
 
@@ -135,42 +134,37 @@ Sao chép mã
 
 ### 🎨 Frontend – `hoaban-frontend/src`
 
-src/
-│── api/
-│── assets/
-│── components/
-│── layouts/
-│── pages/
-│── router/
-│── stores/
-│── types/
-│── utils/
-│── views/
-│── App.vue
-│── main.ts
-
-yaml
-Sao chép mã
+-src/
+-│── api/
+-│── assets/
+-│── components/
+-│── layouts/
+-│── pages/
+-│── router/
+-│── stores/
+-│── types/
+-│── utils/
+-│── views/
+-│── App.vue
+-│── main.ts
 
 ---
 
 ### 🛠 Backend – `backend/src/main/java/com/hoabanrestaurant/backend`
 
-│── config/
-│── controller/
-│── dto/
-│── entity/
-│── enums/
-│── exception/
-│── mapper/
-│── repository/
-│── security/
-│── service/
-│── util/
-│── BackendApplication.java
+-│── config/
+-│── controller/
+-│── dto/
+-│── entity/
+-│── enums/
+-│── exception/
+-│── mapper/
+-│── repository/
+-│── security/
+-│── service/
+-│── util/
+-│── BackendApplication.java
 
-yaml
-Sao chép mã
 
 ✔ **Cấu hình trong application.yml bao gồm:**  
 - PostgreSQL  
@@ -185,19 +179,16 @@ Sao chép mã
 
 ### 🤖 Backend Chat AI – `backendchat/`
 
-│── config/
-│── controller/
-│── dto/
-│── memory/
-│── model/
-│── nlu/
-│── preprocess/
-│── security/
-│── service/
-│── BackendchatApplication.java
-
-yaml
-Sao chép mã
+-│── config/
+-│── controller/
+-│── dto/
+-│── memory/
+-│── model/
+-│── nlu/
+-│── preprocess/
+-│── security/
+-│── service/
+-│── BackendchatApplication.java
 
 ✔ **application.yml bao gồm:**  
 - Gemini AI (model: gemini-2.5-flash)  
@@ -211,29 +202,26 @@ Sao chép mã
 
 ### ✔ 1️⃣ Chạy Backend
 
-```sh
+```
 cd backend
 ./gradlew bootRun
 Chạy tại:
 ➡ http://localhost:8080/api
 
 ✔ 2️⃣ Chạy BackendChat (AI)
-sh
-Sao chép mã
 cd backendchat
 ./gradlew bootRun
 AI chạy tại:
 ➡ http://localhost:8085/api/ai/chat
 
 ✔ 3️⃣ Chạy Frontend
-sh
-Sao chép mã
 cd hoaban-frontend
 npm install
 npm run dev
 Chạy tại:
 ➡ http://localhost:5173
-
+```
+```
 📌 7. Docker Compose
 Dùng để deploy backend + frontend + PostgreSQL + chatbot AI.
 
@@ -269,6 +257,8 @@ services:
     build: ./hoaban-frontend
     ports:
       - "5173:5173"
+```
+```
 📌 8. Hướng phát triển tương lai
 Phát triển ứng dụng Mobile (Flutter)
 
@@ -283,7 +273,10 @@ Module quản lý kho – nhà cung cấp
 Loyalty: tích điểm & xếp hạng thành viên
 
 WebSocket nâng cao
-
+```
+```
 📌 9. Tác giả
 Nguyễn Quang Minh
 Khoa Công nghệ thông tin – Đại học Kiến trúc Đà Nẵng
+
+```
