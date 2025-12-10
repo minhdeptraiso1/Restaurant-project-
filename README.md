@@ -178,18 +178,18 @@ src/
 ---
 
 ### 🤖 Backend Chat AI – `backendchat/`
-
--│── config/
--│── controller/
--│── dto/
--│── memory/
--│── model/
--│── nlu/
--│── preprocess/
--│── security/
--│── service/
--│── BackendchatApplication.java
-
+```
+│── config/
+│── controller/
+│── dto/
+│── memory/
+│── model/
+│── nlu/
+│── preprocess/
+│── security/
+│── service/
+│── BackendchatApplication.java
+```
 ✔ **application.yml bao gồm:**  
 - Gemini AI (model: gemini-2.5-flash)  
 - Redis  
@@ -282,4 +282,5 @@ Nguyễn Quang Minh
 Khoa Công nghệ thông tin – Đại học Kiến trúc Đà Nẵng
 
 ```
+
 
