@@ -49,14 +49,14 @@ Dự án được phát triển theo kiến trúc **Microservices** gồm:
 ---
 
 ## 📌 2. Kiến trúc dự án
-
--root/
--│── backend/ # Spring Boot API chính
--│── backendchat/ # Spring Boot AI Chat microservice
--│── hoaban-frontend/ # Vue.js giao diện
--│── docker-compose.yml
--│── README.md
-
+```
+root/
+│── backend/ # Spring Boot API chính
+│── backendchat/ # Spring Boot AI Chat microservice
+│── hoaban-frontend/ # Vue.js giao diện
+│── docker-compose.yml
+│── README.md
+```
 
 
 ---
@@ -133,38 +133,38 @@ Dự án được phát triển theo kiến trúc **Microservices** gồm:
 ## 📌 5. Cấu trúc thư mục dự án
 
 ### 🎨 Frontend – `hoaban-frontend/src`
-
--src/
--│── api/
--│── assets/
--│── components/
--│── layouts/
--│── pages/
--│── router/
--│── stores/
--│── types/
--│── utils/
--│── views/
--│── App.vue
--│── main.ts
-
+```
+src/
+│── api/
+│── assets/
+│── components/
+│── layouts/
+│── pages/
+│── router/
+│── stores/
+│── types/
+│── utils/
+│── views/
+│── App.vue
+│── main.ts
+```
 ---
 
 ### 🛠 Backend – `backend/src/main/java/com/hoabanrestaurant/backend`
-
--│── config/
--│── controller/
--│── dto/
--│── entity/
--│── enums/
--│── exception/
--│── mapper/
--│── repository/
--│── security/
--│── service/
--│── util/
--│── BackendApplication.java
-
+```
+│── config/
+│── controller/
+│── dto/
+│── entity/
+│── enums/
+│── exception/
+│── mapper/
+│── repository/
+│── security/
+│── service/
+│── util/
+│── BackendApplication.java
+```
 
 ✔ **Cấu hình trong application.yml bao gồm:**  
 - PostgreSQL  
@@ -199,10 +199,10 @@ Dự án được phát triển theo kiến trúc **Microservices** gồm:
 ---
 
 ## 📌 6. Cách chạy dự án
-
-### ✔ 1️⃣ Chạy Backend
-
 ```
+✔ 1️⃣ Chạy Backend
+
+
 cd backend
 ./gradlew bootRun
 Chạy tại:
@@ -221,12 +221,12 @@ npm run dev
 Chạy tại:
 ➡ http://localhost:5173
 ```
+
+## 7. Docker Compose
 ```
-📌 7. Docker Compose
 Dùng để deploy backend + frontend + PostgreSQL + chatbot AI.
 
-yaml
-Sao chép mã
+
 version: "3.8"
 
 services:
@@ -235,7 +235,7 @@ services:
     environment:
       POSTGRES_DB: hoa_ban
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 081003
+      POSTGRES_PASSWORD: *****
     ports:
       - "5432:5432"
 
@@ -258,8 +258,9 @@ services:
     ports:
       - "5173:5173"
 ```
+
+## 📌 8. Hướng phát triển tương lai
 ```
-📌 8. Hướng phát triển tương lai
 Phát triển ứng dụng Mobile (Flutter)
 
 Hệ thống gợi ý món ăn dựa trên Machine Learning
@@ -274,9 +275,11 @@ Loyalty: tích điểm & xếp hạng thành viên
 
 WebSocket nâng cao
 ```
+
+## 📌 9. Tác giả
 ```
-📌 9. Tác giả
 Nguyễn Quang Minh
 Khoa Công nghệ thông tin – Đại học Kiến trúc Đà Nẵng
 
 ```
+
