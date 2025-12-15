@@ -19,7 +19,8 @@ public class TextNormalizer {
         text = EMOJI.matcher(text).replaceAll("");
 
         // remove special characters
-        text = text.replaceAll("[!.,?;:~%^*()\\[\\]{}…']", " ");
+        text = text.replaceAll("[!.,\\?;:~%^*()\\[\\]{}…']", " ");
+
 
         // remove accents
         String nfd = Normalizer.normalize(text, Normalizer.Form.NFD);

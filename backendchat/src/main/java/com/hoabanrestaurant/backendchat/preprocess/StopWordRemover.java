@@ -38,34 +38,27 @@ public class StopWordRemover {
     ));
 
     public String remove(String text) {
-
-        // 1) Remove emoji, ký tự đặc biệt
-        text = text.replaceAll("[^\\p{L}\\p{N}\\s]", " ");
-
-        // 2) Chuẩn hóa Unicode
+        // 1) Chuẩn hóa Unicode TRƯỚC (đ sẽ thành d)
         text = Normalizer.normalize(text, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "") // xoá dấu
+                .replaceAll("\\p{M}", "")
                 .toLowerCase()
-                .replaceAll("\\s+", " ")
                 .trim();
+
+        // 2) Remove emoji & special chars (bây giờ không cần bảo vệ đ nữa)
+        text = text.replaceAll("[^\\p{L}\\p{N}\\s]", " ");
+        text = text.replaceAll("\\s+", " ").trim();
 
         // 3) Xử lý stop-words
         StringBuilder sb = new StringBuilder();
         for (String w : text.split(" ")) {
-
-            // Giữ lại từ nếu nó nằm trong danh sách bảo vệ
             if (PROTECTED_WORDS.contains(w)) {
                 sb.append(w).append(" ");
                 continue;
             }
-
-            // KHÔNG xoá "ban" nếu user đang nói về BÀN (detect)
             if (w.equals("ban") && text.contains("dat") && !text.contains("ban be")) {
                 sb.append("ban ");
                 continue;
             }
-
-            // Xóa stop words thông thường
             if (!STOP_WORDS.contains(w)) {
                 sb.append(w).append(" ");
             }
