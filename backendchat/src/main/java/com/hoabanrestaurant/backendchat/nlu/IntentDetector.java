@@ -64,7 +64,18 @@ public class IntentDetector {
                         text.contains("de xuat") ||
                         text.contains("mon nao ngon") ||
                         text.contains("an gi") ||
-                        text.contains("nen an");
+                        text.contains("nen an") ||
+                        text.contains("khong cay") ||
+                        text.contains("it cay") ||
+                        text.contains("cay vua") ||
+                        text.contains("mon chay") ||
+                        text.contains("chay") ||
+                        text.contains("healthy") ||
+                        text.contains("thanh dam") ||
+                        text.contains("tot cho suc khoe") ||
+                        text.contains("an gi cho tre em") ||
+                        text.contains("an gi cho nguoi gia") ||
+                        text.contains("mon tot cho suc khoe");
 
         System.out.println("[DEBUG] hasRecommendKeyword: " + hasRecommendKeyword);
         System.out.println("[DEBUG] - contains 'tu van': " + text.contains("tu van"));
