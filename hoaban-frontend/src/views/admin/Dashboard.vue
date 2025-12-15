@@ -5,10 +5,13 @@ import { listDishesAdmin } from "@/api/dishes.admin";
 import { listCategories } from "@/api/categories.admin";
 import { listAreas } from "@/api/areas.admin";
 import { listTables } from "@/api/tables.admin";
+import { getOrderStatsByStatus } from "@/api/orders.service";
+import { getReservationStatsByStatus } from "@/api/reservations.service";
 import http from "@/api/http";
 import { toast } from "vue3-toastify";
 import AdminPageHeader from "@/components/AdminPageHeader.vue";
 import AdminLoadingSkeleton from "@/components/AdminLoadingSkeleton.vue";
+import PieChart from "@/components/admin/PieChart.vue";
 
 const stats = ref({
   users: 0,
@@ -22,6 +25,9 @@ const serverHealth = ref<any>(null);
 const healthLoading = ref(false);
 const healthError = ref(false);
 const loading = ref(false);
+const orderStats = ref<Record<string, number>>({});
+const reservationStats = ref<Record<string, number>>({});
+const statsLoading = ref(false);
 let healthInterval: any = null;
 let cleanupInterval: any = null;
 
@@ -50,6 +56,23 @@ async function loadStats() {
     console.warn("Lỗi tải stats:", e);
   } finally {
     loading.value = false;
+  }
+}
+
+async function loadDailyStats() {
+  statsLoading.value = true;
+  try {
+    const [orders, reservations] = await Promise.all([
+      getOrderStatsByStatus().catch(() => ({ data: {} })),
+      getReservationStatsByStatus().catch(() => ({ data: {} })),
+    ]);
+
+    orderStats.value = orders.data || {};
+    reservationStats.value = reservations.data || {};
+  } catch (e) {
+    console.warn("Lỗi tải thống kê trong ngày:", e);
+  } finally {
+    statsLoading.value = false;
   }
 }
 
@@ -112,6 +135,7 @@ function stopAutoCleanup() {
 
 onMounted(() => {
   loadStats();
+  loadDailyStats();
   startHealthMonitoring();
   startAutoCleanup();
 });
@@ -202,6 +226,46 @@ function getStatusBadge(status: string) {
       return { text: "Không rõ", class: "bg-amber-500/20 text-amber-300 border-amber-500/40" };
   }
 }
+
+const orderStatusLabels: Record<string, string> = {
+  PENDING: "Chờ xử lý",
+  CONFIRMED: "Đã xác nhận",
+  PREPARING: "Đang chuẩn bị",
+  READY: "Sẵn sàng",
+  DELIVERING: "Đang giao",
+  COMPLETED: "Hoàn thành",
+  CANCELLED: "Đã hủy",
+  PAID: "Đã thanh toán",
+};
+
+const reservationStatusLabels: Record<string, string> = {
+  PENDING: "Chờ xác nhận",
+  CONFIRMED: "Đã xác nhận",
+  SEATED: "Đã đến",
+  COMPLETED: "Hoàn thành",
+  CANCELLED: "Đã hủy",
+  NO_SHOW: "Không đến",
+};
+
+const orderStatusColors = [
+  "#3b82f6", // blue - PENDING
+  "#10b981", // emerald - CONFIRMED
+  "#f59e0b", // amber - PREPARING
+  "#06b6d4", // cyan - READY
+  "#8b5cf6", // purple - DELIVERING
+  "#22c55e", // green - COMPLETED
+  "#ef4444", // red - CANCELLED
+  "#10b981", // emerald - PAID
+];
+
+const reservationStatusColors = [
+  "#3b82f6", // blue - PENDING
+  "#10b981", // emerald - CONFIRMED
+  "#06b6d4", // cyan - SEATED
+  "#22c55e", // green - COMPLETED
+  "#ef4444", // red - CANCELLED
+  "#f59e0b", // amber - NO_SHOW
+];
 </script>
 
 <template>
@@ -446,6 +510,46 @@ function getStatusBadge(status: string) {
             <div class="text-3xl font-bold text-white mb-1">{{ item.value }}</div>
             <div class="text-sm text-white/60">{{ item.label }}</div>
           </div>
+        </div>
+      </div>
+
+      <!-- Thống kê trong ngày -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+            <span class="text-3xl">📊</span>
+            Thống kê trong ngày
+          </h2>
+          <button
+            @click="loadDailyStats"
+            :disabled="statsLoading"
+            class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center gap-2"
+          >
+            <span v-if="!statsLoading">🔄</span>
+            <span
+              v-else
+              class="inline-block w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"
+            ></span>
+            {{ statsLoading ? "Đang tải..." : "Làm mới" }}
+          </button>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+          <!-- Biểu đồ Đơn hàng -->
+          <PieChart
+            title="🧾 Đơn hàng trong ngày"
+            :data="orderStats"
+            :labels="orderStatusLabels"
+            :colors="orderStatusColors"
+          />
+
+          <!-- Biểu đồ Đặt bàn -->
+          <PieChart
+            title="📅 Đặt bàn trong ngày"
+            :data="reservationStats"
+            :labels="reservationStatusLabels"
+            :colors="reservationStatusColors"
+          />
         </div>
       </div>
 

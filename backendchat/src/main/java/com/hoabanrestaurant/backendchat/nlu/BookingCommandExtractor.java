@@ -159,7 +159,7 @@ public class BookingCommandExtractor {
         }
 
         Instant startInstant = startZoned.toInstant();
-        Instant endInstant = startInstant.plus(5, ChronoUnit.HOURS);
+        Instant endInstant = startInstant.plus(2, ChronoUnit.HOURS);
 
         return new BookingCommand(startInstant, endInstant, party, note);
     }

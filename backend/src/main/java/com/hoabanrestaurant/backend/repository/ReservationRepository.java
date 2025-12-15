@@ -4,6 +4,7 @@ import com.hoabanrestaurant.backend.entity.Reservation;
 import com.hoabanrestaurant.backend.enums.ReservationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.List;
@@ -52,4 +53,16 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     List<Reservation> findByUser_Id(UUID userId);
 
     List<Reservation> findByStatus(ReservationStatus status);
+
+    @Query("""
+                SELECT r.status, COUNT(r)
+                FROM Reservation r
+                WHERE r.createdAt >= :start AND r.createdAt < :end
+                GROUP BY r.status
+            """)
+    List<Object[]> countByStatusBetween(
+            @Param("start") Instant start,
+            @Param("end") Instant end
+    );
+
 }

@@ -32,3 +32,7 @@ export const adminCancelReservation = (id: string, reason?: string) =>
   http.post<void>(`/v1/reservations/${id}/cancel-by-staff`, { reason });
 
 export const getReservation = (id: string) => http.get<Reservation>(`/v1/reservations/${id}`);
+
+// Thống kê đặt bàn theo trạng thái trong ngày (admin)
+export const getReservationStatsByStatus = () =>
+  http.get<Record<string, number>>("/v1/reservations/stats/by-status-today");

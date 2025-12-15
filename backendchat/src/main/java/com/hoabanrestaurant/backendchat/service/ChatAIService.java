@@ -68,23 +68,7 @@ public class ChatAIService {
         // Bước 1: Nhận diện intent người dùng
         String intent = intentDetector.detect(clean);
 
-        /**
-         * RULE 1: Người dùng gọi món trực tiếp (không cần gọi AI)
-         */
-        if (intent.equals("ORDER_DISH")) {
-            var all = dataFetcher.fetchDishes();
-            var dish = menuMatcher.matchDish(req.message(), all);
 
-            if (dish != null)
-                return new ChatRes(
-                        "Bạn muốn gọi món: " + dish.get("name") + " (" + dish.get("price") + "đ). Xác nhận nhé?",
-                        "ORDER_DISH"
-                );
-        }
-
-        /**
-         * RULE 2: Gợi ý combo khi người dùng có ý định đặt bàn
-         */
         if (intent.equals("BOOK_TABLE")) {
             int partySize = extractPartySize(clean);
             var combos = dataFetcher.fetchCombos();
@@ -142,12 +126,7 @@ public class ChatAIService {
         String reply = json.get("reply").asText();
         String finalIntent = json.get("intent").asText();
 
-        /**
-         * ============================================================
-         * CASE A — BOOK_TABLE_PREVIEW
-         * Lưu JSON preview vào bộ nhớ và yêu cầu user xác nhận
-         * ============================================================
-         */
+
         if (finalIntent.equals("BOOK_TABLE_PREVIEW")) {
 
             try {

@@ -20,6 +20,7 @@ public interface ReservationService {
 
     List<ReservationDto> allReservations();
 
-    public List<Map<String, Object>> getAvailableSlots();
+    List<Map<String, Object>> getAvailableSlots();
 
+    Map<String, Long> getReservationStatsToday();
 }

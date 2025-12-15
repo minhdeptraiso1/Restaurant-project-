@@ -129,6 +129,12 @@ public class OrderController {
         return ApiResponse.ok("Đã xóa " + deleted + " đơn hàng trống");
     }
 
+    @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
+    @GetMapping("/stats/by-status-today")
+    public ApiResponse<?> statsByStatusToday() {
+        return ApiResponse.ok(orderService.getOrderStatsToday());
+    }
+
 
 }
 

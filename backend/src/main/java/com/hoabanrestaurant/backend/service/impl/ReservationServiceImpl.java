@@ -20,7 +20,10 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -203,6 +206,28 @@ public class ReservationServiceImpl implements ReservationService {
         }
 
         return slots;
+    }
+
+    @Override
+    public Map<String, Long> getReservationStatsToday() {
+
+        ZoneId zone = ZoneId.systemDefault();
+        LocalDate today = LocalDate.now(zone);
+
+        Instant start = today.atStartOfDay(zone).toInstant();
+        Instant end = today.plusDays(1).atStartOfDay(zone).toInstant();
+
+        List<Object[]> stats = resRepo.countByStatusBetween(start, end);
+
+        Map<String, Long> result = new HashMap<>();
+
+        for (Object[] row : stats) {
+            ReservationStatus status = (ReservationStatus) row[0];
+            Long count = (Long) row[1];
+            result.put(status.name(), count);
+        }
+
+        return result;
     }
 
 }

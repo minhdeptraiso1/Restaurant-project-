@@ -79,4 +79,10 @@ public class ReservationController {
     public ApiResponse<List<ReservationDto>> all() {
         return ApiResponse.ok(service.allReservations());
     }
+
+    @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
+    @GetMapping("/stats/by-status-today")
+    public ApiResponse<?> statsByStatusToday() {
+        return ApiResponse.ok(service.getReservationStatsToday());
+    }
 }

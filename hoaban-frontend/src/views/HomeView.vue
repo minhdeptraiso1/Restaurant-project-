@@ -224,9 +224,9 @@ async function submitReservation() {
 
     const startTime = toIsoLocal(date.value, time.value);
 
-    // Tính endTime = startTime + 5 tiếng
+    // Tính endTime = startTime + 2 tiếng
     const startDate = new Date(startTime);
-    const endDate = new Date(startDate.getTime() + 5 * 60 * 60 * 1000); // +5 hours
+    const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000); // +2 hours
     const endTime = endDate.toISOString();
 
     // Tạo note gộp thông tin khách hàng

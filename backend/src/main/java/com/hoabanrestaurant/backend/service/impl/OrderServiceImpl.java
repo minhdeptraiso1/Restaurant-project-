@@ -43,6 +43,9 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -705,5 +708,28 @@ public class OrderServiceImpl implements OrderService {
 
         return toDto(o, itemRepo.findByOrder_Id(o.getId()), null);
     }
+
+    @Override
+    public Map<String, Long> getOrderStatsToday() {
+
+        ZoneId zone = ZoneId.systemDefault();
+        LocalDate today = LocalDate.now(zone);
+
+        Instant start = today.atStartOfDay(zone).toInstant();
+        Instant end = today.plusDays(1).atStartOfDay(zone).toInstant();
+
+        List<Object[]> stats = orderRepo.countByStatusBetween(start, end);
+
+        Map<String, Long> result = new HashMap<>();
+
+        for (Object[] row : stats) {
+            OrderStatus status = (OrderStatus) row[0];
+            Long count = (Long) row[1];
+            result.put(status.name(), count);
+        }
+
+        return result;
+    }
+
 
 }

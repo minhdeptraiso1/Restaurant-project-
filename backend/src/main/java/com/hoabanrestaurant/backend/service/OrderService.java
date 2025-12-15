@@ -12,6 +12,7 @@ import com.hoabanrestaurant.backend.entity.Order;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 
@@ -51,4 +52,6 @@ public interface OrderService {
     int cleanEmptyOrders();
 
     OrderDto openByQr(UUID userIdOrNull, String qrCode, String note);
+
+    Map<String, Long> getOrderStatsToday();
 }

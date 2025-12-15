@@ -73,3 +73,7 @@ export const updateOrderStatus = (orderId: string, p: { status: OrderStatus }) =
 
 /** Xóa đơn trống (admin) */
 export const clearOrder = () => http.delete(`/v1/orders/cleanup-empty`);
+
+/** Thống kê đơn hàng theo trạng thái trong ngày (admin) */
+export const getOrderStatsByStatus = () =>
+  http.get<Record<OrderStatus, number>>(`/v1/orders/stats/by-status-today`);

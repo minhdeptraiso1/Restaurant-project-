@@ -4,7 +4,10 @@ import com.hoabanrestaurant.backend.entity.Order;
 import com.hoabanrestaurant.backend.enums.OrderStatus;
 import com.hoabanrestaurant.backend.enums.OrderTypes;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,5 +22,17 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     Optional<Order> findFirstByUser_IdAndStatusAndTypes(UUID userId, OrderStatus status, OrderTypes types);
 
     List<Order> findAllByOrderByCreatedAtDesc();
+
+    @Query("""
+                SELECT o.status, COUNT(o)
+                FROM Order o
+                WHERE o.createdAt >= :start AND o.createdAt < :end
+                GROUP BY o.status
+            """)
+    List<Object[]> countByStatusBetween(
+            @Param("start") Instant start,
+            @Param("end") Instant end
+    );
+
 
 }
