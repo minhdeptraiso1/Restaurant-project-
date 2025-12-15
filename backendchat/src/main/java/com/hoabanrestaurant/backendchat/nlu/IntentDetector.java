@@ -7,9 +7,16 @@ public class IntentDetector {
 
     public String detect(String text) {
 
-        if (text == null || text.isEmpty()) return "UNKNOWN";
+        if (text == null || text.isEmpty()) {
+            System.out.println("[DEBUG] Text is null or empty");
+            return "UNKNOWN";
+        }
+
+        System.out.println("[DEBUG] Original text: " + text);
 
         text = normalize(text);
+
+        System.out.println("[DEBUG] Normalized text: " + text);
 
         /* ================================
          * 1) BOOK_TABLE
@@ -39,48 +46,53 @@ public class IntentDetector {
                         text.contains("book ban") ||
                         text.contains("booking");
 
+        System.out.println("[DEBUG] hasTime: " + hasTime);
+        System.out.println("[DEBUG] hasPeople: " + hasPeople);
+        System.out.println("[DEBUG] hasBookKeyword: " + hasBookKeyword);
+
         if ((hasPeople && hasTime) || hasBookKeyword) {
+            System.out.println("[DEBUG] ✓ Returning BOOK_TABLE");
             return "BOOK_TABLE";
         }
 
         /* ================================
          * 2) ASK_RECOMMENDATION
          * ================================ */
-        if (text.contains("tu van") ||
-                text.contains("goi y") ||
-                text.contains("de xuat") ||
-                text.contains("mon nao ngon") ||
-                text.contains("an gi") ||
-                text.contains("nen an") ||
-                text.contains("mon khong cay") ||
-                text.contains("mon it cay") ||
-                text.contains("mon chay") ||
-                text.contains("mon healthy")) {
+        boolean hasRecommendKeyword =
+                text.contains("tu van") ||
+                        text.contains("goi y") ||
+                        text.contains("de xuat") ||
+                        text.contains("mon nao ngon") ||
+                        text.contains("an gi") ||
+                        text.contains("nen an");
+
+        System.out.println("[DEBUG] hasRecommendKeyword: " + hasRecommendKeyword);
+        System.out.println("[DEBUG] - contains 'tu van': " + text.contains("tu van"));
+        System.out.println("[DEBUG] - contains 'goi y': " + text.contains("goi y"));
+        System.out.println("[DEBUG] - contains 'de xuat': " + text.contains("de xuat"));
+
+        if (hasRecommendKeyword) {
+            System.out.println("[DEBUG] ✓ Returning ASK_RECOMMENDATION");
             return "ASK_RECOMMENDATION";
         }
 
         /* ================================
-         * 3) ORDER_DISH (CHỈ MATCH KHI USER ĐẶC BIỆT YÊU CẦU)
+         * 3) ASK_PRICE
          * ================================ */
-        if (text.contains("goi mon") ||
-                text.startsWith("goi ") ||
-                text.startsWith("cho toi ") ||
-                text.contains("lay them") ||
-                text.contains("them mon") ||
-                text.contains("toi muon an")) {
-            return "ORDER_DISH";
-        }
+        boolean hasPriceKeyword =
+                text.contains("gia") ||
+                        text.contains("bao nhieu") ||
+                        text.contains("gia tien") ||
+                        text.contains("gia ca");
 
-        /* ================================
-         * 4) ASK_PRICE
-         * ================================ */
-        if (text.contains("gia") ||
-                text.contains("bao nhieu") ||
-                text.contains("gia tien") ||
-                text.contains("gia ca")) {
+        System.out.println("[DEBUG] hasPriceKeyword: " + hasPriceKeyword);
+
+        if (hasPriceKeyword) {
+            System.out.println("[DEBUG] ✓ Returning ASK_PRICE");
             return "ASK_PRICE";
         }
 
+        System.out.println("[DEBUG] ✗ Returning SMALL_TALK (default)");
         return "SMALL_TALK";
     }
 
@@ -90,9 +102,14 @@ public class IntentDetector {
      * Hàm normalize tiếng Việt thành không dấu
      * --------------------------------------------- */
     private String normalize(String text) {
-        return java.text.Normalizer
+        String normalized = java.text.Normalizer
                 .normalize(text.toLowerCase(), java.text.Normalizer.Form.NFD)
                 .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
                 .trim();
+
+        System.out.println("[DEBUG] normalize() input: '" + text + "'");
+        System.out.println("[DEBUG] normalize() output: '" + normalized + "'");
+
+        return normalized;
     }
 }

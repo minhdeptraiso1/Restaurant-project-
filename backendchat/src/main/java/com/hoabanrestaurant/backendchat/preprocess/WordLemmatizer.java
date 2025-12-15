@@ -26,25 +26,44 @@ public class WordLemmatizer {
         DICT.put("dat ban", "dat ban");
         DICT.put("dat cho", "dat ban");
 
-        // Stopwords xoá
-        DICT.put("an", "");
-        DICT.put("mon", "");
+        // QUAN TRỌNG: Chỉ xóa "an" và "mon" khi chúng là từ RIÊNG BIỆT
+        // Sử dụng word boundary \b để tránh xóa "an" trong "van", "ban"
+        // CHÚ Ý: Không thể dùng \b trong replace trực tiếp
+        // Nên KHÔNG nên xóa "an" và "mon" ở đây
+        // Thay vào đó, để StopWordRemover xử lý
+
+        // DICT.put("an", "");  // ← XÓA DÒNG NÀY!
+        // DICT.put("mon", ""); // ← XÓA DÒNG NÀY!
+
         DICT.put("cho minh", "");
         DICT.put("toi muon", "muon");
     }
 
     public String lemmatize(String text) {
 
+        System.out.println("[LEMMATIZER-DEBUG] Input: '" + text + "'");
+
         // chuẩn hoá: lower + remove dấu
         text = normalize(text);
 
+        System.out.println("[LEMMATIZER-DEBUG] After normalize: '" + text + "'");
+
         // thay thế theo dictionary
         for (Map.Entry<String, String> e : DICT.entrySet()) {
+            String before = text;
             text = text.replace(e.getKey(), e.getValue());
+            if (!before.equals(text)) {
+                System.out.println("[LEMMATIZER-DEBUG] Replaced '" + e.getKey() + "' -> '" + e.getValue() + "'");
+                System.out.println("[LEMMATIZER-DEBUG] Result: '" + text + "'");
+            }
         }
 
         // xoá space thừa
-        return text.replaceAll("\\s{2,}", " ").trim();
+        text = text.replaceAll("\\s{2,}", " ").trim();
+
+        System.out.println("[LEMMATIZER-DEBUG] Final output: '" + text + "'");
+
+        return text;
     }
 
     private String normalize(String s) {
