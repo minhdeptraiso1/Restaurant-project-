@@ -1,0 +1,25 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: hoaban-chat-ai
+
+  ai:
+    google:
+      genai:
+        project-id:
+        api-key:
+        chat:
+          options:
+            model: gemini-2.5-flash
+
+internal:
+  secret: "HOABAN-AI-2025-SECRET-KEY"
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000
+      database: 0

@@ -12,12 +12,14 @@ import {
 import { listTables } from "@/api/tables.admin";
 import { listAreas } from "@/api/areas.admin";
 import { listDishes } from "@/api/dishes.service";
+import { listCombos } from "@/api/combos.service";
 
 // Data
 const orders = ref<any[]>([]);
 const tables = ref<any[]>([]);
 const areas = ref<any[]>([]);
 const dishes = ref<any[]>([]);
+const combos = ref<any[]>([]);
 const loading = ref(false);
 const processingPayment = ref(false);
 const updatingStatus = ref(false);
@@ -81,6 +83,14 @@ function getTableName(tableId?: string) {
   const table = tables.value.find((t) => t.id === tableId);
   if (!table) return "Mang về";
   return `${table.code || table.name || "Bàn"} (${areaName(table.areaId)})`;
+}
+function getItemName(item: any) {
+  if (!item) return "N/A";
+  if (item.name) return item.name; // Nếu item đã có name từ API
+  if (item.itemType === "COMBO") {
+    return combos.value.find((c) => c.id === item.itemId)?.name || "N/A";
+  }
+  return dishes.value.find((d) => d.id === item.itemId)?.name || "N/A";
 }
 function getDishName(id: string) {
   return dishes.value.find((d) => d.id === id)?.name || "N/A";
@@ -178,11 +188,12 @@ async function clearEmptyOrders() {
 async function loadData() {
   loading.value = true;
   try {
-    const [ordersRes, tablesRes, areasRes, dishesRes] = await Promise.all([
+    const [ordersRes, tablesRes, areasRes, dishesRes, combosRes] = await Promise.all([
       getAllOrders().catch(() => ({ data: [] })),
       listTables().catch(() => ({ data: [] })),
       listAreas().catch(() => ({ data: [] })),
       listDishes().catch(() => ({ data: [] })),
+      listCombos().catch(() => ({ data: [] })),
     ]);
     orders.value = (ordersRes.data || []).sort(
       (a: any, b: any) =>
@@ -194,6 +205,10 @@ async function loadData() {
     // Handle pagination response for dishes
     const dishesData = dishesRes?.content || dishesRes?.data?.content || dishesRes?.data || [];
     dishes.value = Array.isArray(dishesData) ? dishesData : [];
+
+    // Handle pagination response for combos
+    const combosData = combosRes?.content || combosRes?.data?.content || combosRes?.data || [];
+    combos.value = Array.isArray(combosData) ? combosData : [];
   } catch (e: any) {
     toast.error(e?.friendlyMessage || "Không tải được dữ liệu");
   } finally {
@@ -456,7 +471,9 @@ onMounted(loadData);
                 <div class="text-sm font-medium mb-2">Món đã order</div>
                 <div class="space-y-1 text-xs text-white/80">
                   <div v-for="it in order.items" :key="it.id">
-                    {{ getDishName(it.itemId) }} × {{ it.quantity }} — {{ vnd(it.lineTotal || 0) }}
+                    <span v-if="it.itemType === 'COMBO'" class="text-blue-400">🎁</span>
+                    <span v-else class="text-emerald-400">🍽️</span>
+                    {{ getItemName(it) }} × {{ it.quantity }} — {{ vnd(it.lineTotal || 0) }}
                   </div>
                 </div>
               </div>

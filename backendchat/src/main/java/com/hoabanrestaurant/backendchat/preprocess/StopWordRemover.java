@@ -29,6 +29,7 @@ public class StopWordRemover {
             "de",      // đề (trong "đề xuất")
             "xuat",    // xuất (trong "đề xuất")
             "dat",     // đặt (trong "đặt bàn")
+            "đặt",     // đặt (trong "đặt bàn")
             "ban",     // bàn (trong "đặt bàn")
             "nguoi",   // người
             "gia",     // giá

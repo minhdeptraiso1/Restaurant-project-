@@ -11,7 +11,7 @@ import http from "@/api/http";
 import { toast } from "vue3-toastify";
 import AdminPageHeader from "@/components/AdminPageHeader.vue";
 import AdminLoadingSkeleton from "@/components/AdminLoadingSkeleton.vue";
-import PieChart from "@/components/admin/PieChart.vue";
+import EChartsPie from "@/components/admin/EChartsPie.vue";
 
 const stats = ref({
   users: 0,
@@ -536,19 +536,21 @@ const reservationStatusColors = [
 
         <div class="grid md:grid-cols-2 gap-6">
           <!-- Biểu đồ Đơn hàng -->
-          <PieChart
+          <EChartsPie
             title="🧾 Đơn hàng trong ngày"
             :data="orderStats"
             :labels="orderStatusLabels"
             :colors="orderStatusColors"
+            :height="350"
           />
 
           <!-- Biểu đồ Đặt bàn -->
-          <PieChart
+          <EChartsPie
             title="📅 Đặt bàn trong ngày"
             :data="reservationStats"
             :labels="reservationStatusLabels"
             :colors="reservationStatusColors"
+            :height="350"
           />
         </div>
       </div>

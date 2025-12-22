@@ -16,8 +16,6 @@ const routes: RouteRecordRaw[] = [
         component: () => import("@/pages/Reservation.vue"),
       },
       { path: "cart", name: "cart", component: () => import("@/pages/Cart.vue") },
-      // Public: open order by QR code (guest access)
-      { path: "open-order", name: "open-order", component: () => import("@/pages/OpenByQr.vue") },
       {
         path: "checkout",
         name: "checkout",
@@ -65,6 +63,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import("@/pages/UpdateProfile.vue"),
       },
     ],
+  },
+  // Open order by QR code (no header/footer for better UX)
+  {
+    path: "/open-order",
+    name: "open-order",
+    component: () => import("@/pages/OpenByQr.vue"),
   },
   {
     path: "/auth",

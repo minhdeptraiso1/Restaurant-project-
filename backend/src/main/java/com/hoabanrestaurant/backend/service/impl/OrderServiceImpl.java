@@ -541,24 +541,28 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderDto openByQr(UUID userIdOrNull, String qrCode, String note) {
-        // 1) Verify QR (chữ ký + hạn)
-        var decoded = qrSigner.verify(qrCode);               // ném lỗi nếu sai chữ ký
+        // 1) Verify QR
+        var decoded = qrSigner.verify(qrCode);
         var now = Instant.now();
         if (decoded.exp() != null && now.isAfter(decoded.exp())) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "QR đã hết hạn");
         }
         UUID tableId = decoded.tableId();
 
-        // 2) Load bàn + khóa bi quan để chặn đua
+        // 2) Load bàn + khóa bi quan
         var table = tableRepo.findByIdForUpdate(tableId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Bàn không tồn tại"));
 
-        // 3) Đảm bảo 1 bàn chỉ có 1 order OPEN
-        if (orderRepo.existsByTable_IdAndStatus(tableId, OrderStatus.OPEN)) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Bàn đang có order mở");
+        // 3) THAY ĐỔI LOGIC: Tìm order đang OPEN
+        var existingOrder = orderRepo.findByTable_IdAndStatus(tableId, OrderStatus.OPEN);
+
+        if (!existingOrder.isEmpty()) { // Kiểm tra List không rỗng
+            // Lấy phần tử đầu tiên trong danh sách
+            Order o = existingOrder.get(0);
+            return toDto(o, List.of(), null);
         }
 
-        // 4) Tạo order OPEN
+        // 4) Nếu chưa có thì mới tạo order mới (Logic cũ)
         Order o = new Order();
         o.setId(UUID.randomUUID());
         o.setTypes(OrderTypes.DINE_IN);
@@ -576,8 +580,6 @@ public class OrderServiceImpl implements OrderService {
             o.setUser(user);
         }
 
-
-        // 6) Lưu & trả DTO
         o = orderRepo.save(o);
         return toDto(o, List.of(), null);
     }

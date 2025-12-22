@@ -53,7 +53,6 @@ public class OrderController {
     }
 
     // Thêm món vào order (dine-in)
-    @PreAuthorize("hasAnyRole('CUSTOMER','STAFF','ADMIN')")
     @PostMapping("/{orderId}/items")
     public ApiResponse<OrderDto> addItem(
             @PathVariable UUID orderId,

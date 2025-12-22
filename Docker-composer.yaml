@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: hoaban_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: hoaban
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 123
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hoaban_backend
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hoaban
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: 123
+    ports:
+      - "8080:8080"
+
+  backendchat:
+    build:
+      context: ./backendchat
+      dockerfile: Dockerfile
+    container_name: hoaban_backendchat
+    restart: always
+    depends_on:
+      - backend
+    environment:
+      SPRING_AI_MODEL: gemini-1.5-flash
+      SPRING_AI_API_KEY: ${GEMINI_API_KEY}
+    ports:
+      - "8085:8085"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: hoaban_frontend
+    restart: always
+    depends_on:
+      - backend
+      - backendchat
+    ports:
+      - "80:80"
+
+volumes:
+  pgdata:

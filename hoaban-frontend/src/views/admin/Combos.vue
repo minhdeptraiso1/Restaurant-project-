@@ -65,10 +65,13 @@ const filteredCombos = computed(() => {
 async function load() {
   loading.value = true;
   try {
-    const [combosRes, dishesRes] = await Promise.all([listCombos(), listDishesAdmin()]);
+    const [combosRes, dishesRes] = await Promise.all([
+      listCombos(),
+      listDishesAdmin({ size: 1000 }), // Lấy tất cả món ăn (tối đa 1000)
+    ]);
     combos.value = combosRes.data || [];
-    // API có thể trả về dạng paginated {content: [...]} hoặc array trực tiếp
-    dishes.value = Array.isArray(dishesRes.data) ? dishesRes.data : dishesRes.data?.content || [];
+    // API trả về dạng paginated {content: [...]}
+    dishes.value = dishesRes.data?.content || [];
   } catch (e: any) {
     toast.error(e?.friendlyMessage || "Không tải được dữ liệu");
   } finally {

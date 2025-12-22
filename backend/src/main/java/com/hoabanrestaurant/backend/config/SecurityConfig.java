@@ -53,6 +53,8 @@ public class SecurityConfig {
             "/v1/dishes",
             "/v1/reviews/latest",
             "/v1/orders/open-by-qr",
+            "/v1/orders/*/items",
+            "/v1/orders/*",
             "/internal/ai/**",
             "/v1/tables/qr/issue",
             "/swagger-ui/**",

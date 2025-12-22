@@ -1,0 +1,111 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: hoa-ban-backend
+  datasource:
+    url: jdbc:postgresql://localhost:{password}/hoa_ban
+    username:
+    password:
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+
+  flyway:
+    locations: classpath:db/migration
+    validate-on-migrate: true
+    enabled: true
+    baseline-on-migrate: true
+
+  devtools:
+    restart:
+      enabled: true
+    livereload:
+      enabled: true
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username:
+    password:
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+    default-encoding: UTF-8
+
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    cache: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+    quartz:
+      roles:
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui
+  api-docs:
+    path: /v3/api-docs
+
+app:
+  security:
+    jwt:
+      secret: lj87AonkTl65VkpbEvigbC6GMC86vWekyt+S9zYo5kIEfAAAPDqFBmI2u3o5zZnsi+z1rI75Fovjqmy/hyKcUg
+      access-token-minutes: 2
+      refresh-token-days: 7
+      issuer: hoa-ban-backend
+  mail:
+    from: "Hoa Ban Restaurant <minh_2151220144@dau.edu.vn>"
+logging:
+  level:
+    root: INFO
+    org.springframework.security: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+
+payment:
+  vn-pay:
+    vnpUrl: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+    tmnCode: PABAHY9H
+    secretKey: PIRMPCF2GEPUV4BANEJGGZ5G3F2CMGH7
+    returnUrl: http://localhost:5173/vnpay-return
+    ipnUrl: http://localhost:8080/api/v1/payments/vnpay/ipn
+    version: 2.1.0
+    command: pay
+    orderType: other
+
+
+
+qr:
+  secret: madatbankhongnennoira
+
+chatbot:
+  url: http://localhost:8085/api/ai/chat
+  internal-secret: "HOABAN-AI-2025-SECRET-KEY"
