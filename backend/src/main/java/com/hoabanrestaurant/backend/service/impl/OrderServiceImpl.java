@@ -46,9 +46,11 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -176,18 +178,18 @@ public class OrderServiceImpl implements OrderService {
 
             orderRepo.save(o);
 
-            if (o.getUser() != null) {
-                emailService.sendTemplate(
-                        o.getUser().getEmail(),
-                        "Đặt hàng thành công – Hoa Ban Restaurant",
-                        "email/order_created_cod.html",
-                        Map.of(
-                                "fullName", o.getUser().getFullName(),
-                                "orderId", o.getId().toString(),
-                                "total", o.getTotal().toPlainString()
-                        )
-                );
-            }
+//            if (o.getUser() != null) {
+//                emailService.sendTemplate(
+//                        o.getUser().getEmail(),
+//                        "Đặt hàng thành công – Hoa Ban Restaurant",
+//                        "email/order_created_cod.html",
+//                        Map.of(
+//                                "fullName", o.getUser().getFullName(),
+//                                "orderId", o.getId().toString(),
+//                                "total", o.getTotal().toPlainString()
+//                        )
+//                );
+//            }
 
 
             return toDto(o, itemRepo.findByOrder_Id(o.getId()), null);
@@ -254,17 +256,17 @@ public class OrderServiceImpl implements OrderService {
                     .divide(BigDecimal.valueOf(1000), 0, RoundingMode.FLOOR)
                     .longValue();
 
-            emailService.sendTemplate(
-                    order.getUser().getEmail(),
-                    "Hóa đơn thanh toán – Hoa Ban",
-                    "email/order_paid.html",
-                    Map.of(
-                            "fullName", order.getUser().getFullName(),
-                            "orderId", order.getId().toString(),
-                            "total", order.getTotal().toPlainString(),
-                            "points", earned
-                    )
-            );
+//            emailService.sendTemplate(
+//                    order.getUser().getEmail(),
+//                    "Hóa đơn thanh toán – Hoa Ban",
+//                    "email/order_paid.html",
+//                    Map.of(
+//                            "fullName", order.getUser().getFullName(),
+//                            "orderId", order.getId().toString(),
+//                            "total", order.getTotal().toPlainString(),
+//                            "points", earned
+//                    )
+//            );
         }
 
         orderRepo.save(order);
@@ -731,6 +733,48 @@ public class OrderServiceImpl implements OrderService {
         }
 
         return result;
+    }
+
+    @Override
+    public Map<String, BigDecimal> getRevenueLast7Days() {
+
+        ZoneId zone = ZoneId.systemDefault();
+        LocalDate today = LocalDate.now(zone);
+
+        // Tạo map mặc định 7 ngày = 0
+        Map<LocalDate, BigDecimal> dailyRevenue = new LinkedHashMap<>();
+        for (int i = 6; i >= 0; i--) {
+            dailyRevenue.put(today.minusDays(i), BigDecimal.ZERO);
+        }
+
+        Instant from = today.minusDays(6)
+                .atStartOfDay(zone)
+                .toInstant();
+
+        Instant to = today.plusDays(1)
+                .atStartOfDay(zone)
+                .toInstant();
+
+        List<Object[]> rows = orderRepo.sumRevenueByCreatedAtBetween(
+                from, to, OrderStatus.PAID
+        );
+
+        for (Object[] row : rows) {
+            Instant createdAt = (Instant) row[0];
+            BigDecimal total = (BigDecimal) row[1];
+
+            LocalDate day = createdAt.atZone(zone).toLocalDate();
+            dailyRevenue.put(day, dailyRevenue.getOrDefault(day, BigDecimal.ZERO).add(total));
+        }
+
+        // Convert key -> String cho frontend
+        return dailyRevenue.entrySet().stream()
+                .collect(Collectors.toMap(
+                        e -> e.getKey().toString(),
+                        Map.Entry::getValue,
+                        (a, b) -> a,
+                        LinkedHashMap::new
+                ));
     }
 
 

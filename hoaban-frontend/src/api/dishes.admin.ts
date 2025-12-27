@@ -16,5 +16,3 @@ export const createDish = (payload: CreateDishRequest) => http.post<Dish>("/v1/d
 
 export const updateDish = (id: string, payload: UpdateDishRequest) =>
   http.put<Dish>(`/v1/dishes/${id}`, payload);
-
-export const deleteDish = (id: string) => http.delete<void>(`/v1/dishes/${id}`);

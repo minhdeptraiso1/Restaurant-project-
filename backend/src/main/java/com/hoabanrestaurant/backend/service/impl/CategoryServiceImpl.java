@@ -37,7 +37,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public List<CategoryDto> listAll() {
-        return mapper.toDtoList(repo.findAll());
+        return mapper.toDtoList(repo.findByStatus(MenuStatus.ACTIVE));
     }
 
     @Override

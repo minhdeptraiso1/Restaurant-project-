@@ -9,5 +9,3 @@ export const createCombo = (payload: CreateComboRequest) => http.post<Combo>("/v
 
 export const updateCombo = (id: string, payload: UpdateComboRequest) =>
   http.put<Combo>(`/v1/combos/${id}`, payload);
-
-export const deleteCombo = (id: string) => http.delete<void>(`/v1/combos/${id}`);

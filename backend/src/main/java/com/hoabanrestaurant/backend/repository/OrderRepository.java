@@ -34,5 +34,18 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
             @Param("end") Instant end
     );
 
+    @Query("""
+                SELECT o.createdAt, SUM(o.total)
+                FROM Order o
+                WHERE o.createdAt BETWEEN :from AND :to
+                  AND o.status = :status
+                GROUP BY o.createdAt
+            """)
+    List<Object[]> sumRevenueByCreatedAtBetween(
+            @Param("from") Instant from,
+            @Param("to") Instant to,
+            @Param("status") OrderStatus status
+    );
+
 
 }

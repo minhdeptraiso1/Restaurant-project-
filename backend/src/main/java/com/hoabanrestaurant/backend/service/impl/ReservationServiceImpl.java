@@ -103,16 +103,16 @@ public class ReservationServiceImpl implements ReservationService {
         // Có thể set CONFIRMED ngay khi gán bàn
         r.setStatus(ReservationStatus.CONFIRMED);
         resRepo.save(r);
-        emailService.sendTemplate(
-                r.getUser().getEmail(),
-                "Xác nhận đặt bàn – Hoa Ban",
-                "email/reservation_confirm.html",
-                Map.of("fullName", r.getUser().getFullName(),
-                        "start", r.getStartTime(),
-                        "end", r.getEndTime(),
-                        "partySize", r.getPartySize(),
-                        "reservationId", r.getId().toString())
-        );
+//        emailService.sendTemplate(
+//                r.getUser().getEmail(),
+//                "Xác nhận đặt bàn – Hoa Ban",
+//                "email/reservation_confirm.html",
+//                Map.of("fullName", r.getUser().getFullName(),
+//                        "start", r.getStartTime(),
+//                        "end", r.getEndTime(),
+//                        "partySize", r.getPartySize(),
+//                        "reservationId", r.getId().toString())
+//        );
 
         return toDtoWithTables(r, tables);
     }

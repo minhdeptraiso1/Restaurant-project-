@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from "vue";
-import { listAreas, createArea } from "@/api/areas.admin";
-// Nếu bạn đã tạo thêm các API này theo gợi ý trước đó, hãy bật 2 dòng sau:
-import { updateArea, deleteArea } from "@/api/areas.admin";
+import { listAreas, createArea, updateArea } from "@/api/areas.admin";
 import { toast } from "vue3-toastify";
-import ConfirmModal from "@/components/ConfirmModal.vue";
 
 type Area = {
   id: string;
@@ -30,11 +27,6 @@ const form = ref<{ id?: string; name: string; description: string; status: "ACTI
 const q = ref("");
 const statusFilter = ref<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
 const editingId = ref<string>("");
-
-// Delete confirmation modal
-const showDeleteModal = ref(false);
-const areaToDelete = ref<Area | null>(null);
-const deleting = ref(false);
 
 const isValid = computed(() => form.value.name.trim().length >= 2);
 
@@ -96,31 +88,6 @@ async function submit() {
     toast.error(e?.friendlyMessage || "Lưu khu vực thất bại");
   } finally {
     submitting.value = false;
-  }
-}
-
-function openDeleteModal(a: Area) {
-  areaToDelete.value = a;
-  showDeleteModal.value = true;
-}
-
-function closeDeleteModal() {
-  showDeleteModal.value = false;
-  areaToDelete.value = null;
-}
-
-async function confirmDeleteArea() {
-  if (!areaToDelete.value) return;
-  deleting.value = true;
-  try {
-    await deleteArea(areaToDelete.value.id);
-    toast.success("Đã xoá khu vực");
-    await load();
-    closeDeleteModal();
-  } catch (e: any) {
-    toast.error(e?.friendlyMessage || "Xoá khu vực thất bại");
-  } finally {
-    deleting.value = false;
   }
 }
 
@@ -306,20 +273,12 @@ onMounted(load);
                 </span>
               </td>
               <td class="py-3 px-2">
-                <div class="flex flex-wrap gap-1">
-                  <button
-                    class="px-2 py-1 text-xs rounded-lg border border-blue-400/40 text-blue-300 hover:bg-blue-500/10"
-                    @click="startEdit(a)"
-                  >
-                    ✏️ Sửa
-                  </button>
-                  <button
-                    class="px-2 py-1 text-xs rounded-lg border border-rose-400/40 text-rose-300 hover:bg-rose-500/10"
-                    @click="openDeleteModal(a)"
-                  >
-                    🗑️ Xoá
-                  </button>
-                </div>
+                <button
+                  class="px-2 py-1 text-xs rounded-lg border border-blue-400/40 text-blue-300 hover:bg-blue-500/10"
+                  @click="startEdit(a)"
+                >
+                  ✏️ Sửa
+                </button>
               </td>
             </tr>
           </tbody>
@@ -327,14 +286,4 @@ onMounted(load);
       </div>
     </div>
   </div>
-
-  <!-- Confirm Delete Modal -->
-  <ConfirmModal
-    :show="showDeleteModal"
-    :message="`Bạn có chắc chắn muốn xóa khu vực này không?`"
-    :itemName="areaToDelete?.name"
-    :loading="deleting"
-    @confirm="confirmDeleteArea"
-    @cancel="closeDeleteModal"
-  />
 </template>

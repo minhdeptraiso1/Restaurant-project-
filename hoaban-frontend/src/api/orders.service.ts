@@ -77,3 +77,7 @@ export const clearOrder = () => http.delete(`/v1/orders/cleanup-empty`);
 /** Thống kê đơn hàng theo trạng thái trong ngày (admin) */
 export const getOrderStatsByStatus = () =>
   http.get<Record<OrderStatus, number>>(`/v1/orders/stats/by-status-today`);
+
+/** Thống kê doanh thu 7 ngày gần nhất (admin) */
+export const getRevenueLast7Days = () =>
+  http.get<Record<string, number>>(`/v1/orders/stats/revenue-last-7-days`);

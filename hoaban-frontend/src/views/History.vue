@@ -765,7 +765,7 @@ const getOrderStatusText = (status: string) => {
 };
 
 const canCancelReservation = (reservation: Reservation) => {
-  return reservation.status === "PENDING" || reservation.status === "CONFIRMED";
+  return reservation.status === "PENDING";
 };
 
 // Format helpers

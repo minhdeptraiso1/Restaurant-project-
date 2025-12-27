@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from "vue";
-import { listCombos, createCombo, updateCombo, deleteCombo } from "@/api/combos.admin";
+import { listCombos, createCombo, updateCombo } from "@/api/combos.admin";
 import { listDishesAdmin } from "@/api/dishes.admin";
 import { toast } from "vue3-toastify";
-import ConfirmModal from "@/components/ConfirmModal.vue";
 
 type Dish = any;
 type Combo = any;
@@ -12,11 +11,6 @@ const combos = ref<Combo[]>([]);
 const dishes = ref<Dish[]>([]);
 const loading = ref(false);
 const submitting = ref(false);
-
-// Delete confirmation modal
-const showDeleteModal = ref(false);
-const comboToDelete = ref<Combo | null>(null);
-const deleting = ref(false);
 
 // ----- FORM -----
 const form = ref({
@@ -181,32 +175,6 @@ async function submit() {
     toast.error(e?.friendlyMessage || "Lưu combo thất bại");
   } finally {
     submitting.value = false;
-  }
-}
-
-// Delete functions
-function openDeleteModal(combo: Combo) {
-  comboToDelete.value = combo;
-  showDeleteModal.value = true;
-}
-
-function closeDeleteModal() {
-  showDeleteModal.value = false;
-  comboToDelete.value = null;
-}
-
-async function confirmDeleteCombo() {
-  if (!comboToDelete.value) return;
-  deleting.value = true;
-  try {
-    await deleteCombo(comboToDelete.value.id);
-    toast.success("Đã xóa combo");
-    await load();
-    closeDeleteModal();
-  } catch (e: any) {
-    toast.error(e?.friendlyMessage || "Xóa combo thất bại");
-  } finally {
-    deleting.value = false;
   }
 }
 
@@ -501,33 +469,15 @@ onMounted(load);
 
           <div class="mt-3 flex items-center justify-between">
             <div class="text-emerald-300 font-semibold">{{ vnd(Number(c.price)) }}</div>
-            <div class="flex gap-2">
-              <button
-                class="px-2 py-1 text-xs rounded-lg border border-blue-400/40 text-blue-300 hover:bg-blue-500/10"
-                @click="startEdit(c)"
-              >
-                ✏️ Sửa
-              </button>
-              <button
-                class="px-2 py-1 text-xs rounded-lg border border-rose-400/40 text-rose-300 hover:bg-rose-500/10"
-                @click="openDeleteModal(c)"
-              >
-                🗑️ Xoá
-              </button>
-            </div>
+            <button
+              class="px-2 py-1 text-xs rounded-lg border border-blue-400/40 text-blue-300 hover:bg-blue-500/10"
+              @click="startEdit(c)"
+            >
+              ✏️ Sửa
+            </button>
           </div>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- Confirm Delete Modal -->
-  <ConfirmModal
-    :show="showDeleteModal"
-    :message="`Bạn có chắc chắn muốn xóa combo này không?`"
-    :itemName="comboToDelete?.name"
-    :loading="deleting"
-    @confirm="confirmDeleteCombo"
-    @cancel="closeDeleteModal"
-  />
 </template>

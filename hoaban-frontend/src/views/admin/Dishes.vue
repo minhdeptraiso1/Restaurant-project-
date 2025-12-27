@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from "vue";
-import { listDishesAdmin, createDish, updateDish, deleteDish } from "@/api/dishes.admin";
+import { listDishesAdmin, createDish, updateDish } from "@/api/dishes.admin";
 import { listCategories } from "@/api/categories.admin";
 import { toast } from "vue3-toastify";
-import ConfirmModal from "@/components/ConfirmModal.vue";
 
 type Dish = any;
 type Category = any;
@@ -39,11 +38,6 @@ const statusFilter = ref<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
 const categoryFilter = ref<string>("ALL");
 const sortKey = ref<"name" | "price">("name");
 const sortDir = ref<"asc" | "desc">("asc");
-
-// Delete confirmation modal
-const showDeleteModal = ref(false);
-const dishToDelete = ref<{ id: string; name: string } | null>(null);
-const deleting = ref(false);
 
 const UNIT_MAP: Record<string, string> = {
   PORTION: "Phần",
@@ -150,31 +144,6 @@ function editDish(dish: Dish) {
   };
   editingId.value = dish.id;
   window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-function openDeleteModal(id: string, name: string) {
-  dishToDelete.value = { id, name };
-  showDeleteModal.value = true;
-}
-
-function closeDeleteModal() {
-  showDeleteModal.value = false;
-  dishToDelete.value = null;
-}
-
-async function confirmDeleteDish() {
-  if (!dishToDelete.value) return;
-  deleting.value = true;
-  try {
-    await deleteDish(dishToDelete.value.id);
-    toast.success("Xóa món thành công");
-    await load();
-    closeDeleteModal();
-  } catch (e: any) {
-    toast.error(e?.friendlyMessage || "Lỗi khi xóa món");
-  } finally {
-    deleting.value = false;
-  }
 }
 
 // === ẢNH: chọn file và convert => data URL ===
@@ -554,20 +523,12 @@ onMounted(load);
                 </span>
               </td>
               <td class="py-3 px-2">
-                <div class="flex flex-wrap gap-1">
-                  <button
-                    class="px-2 py-1 text-xs rounded-lg border border-blue-400/40 text-blue-300 hover:bg-blue-500/10"
-                    @click="editDish(d)"
-                  >
-                    ✏️ Sửa
-                  </button>
-                  <button
-                    class="px-2 py-1 text-xs rounded-lg border border-rose-400/40 text-rose-300 hover:bg-rose-500/10"
-                    @click="openDeleteModal(d.id, d.name)"
-                  >
-                    🗑️ Xóa
-                  </button>
-                </div>
+                <button
+                  class="px-2 py-1 text-xs rounded-lg border border-blue-400/40 text-blue-300 hover:bg-blue-500/10"
+                  @click="editDish(d)"
+                >
+                  ✏️ Sửa
+                </button>
               </td>
             </tr>
           </tbody>
@@ -602,14 +563,4 @@ onMounted(load);
       </div>
     </div>
   </div>
-
-  <!-- Confirm Delete Modal -->
-  <ConfirmModal
-    :show="showDeleteModal"
-    :message="`Bạn có chắc chắn muốn xóa món ăn này không?`"
-    :itemName="dishToDelete?.name"
-    :loading="deleting"
-    @confirm="confirmDeleteDish"
-    @cancel="closeDeleteModal"
-  />
 </template>

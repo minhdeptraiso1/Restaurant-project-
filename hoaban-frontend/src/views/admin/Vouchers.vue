@@ -155,12 +155,6 @@
                     >
                       ✏️ Sửa
                     </button>
-                    <button
-                      class="px-2 py-1 text-xs rounded-lg border border-rose-400/40 text-rose-300 hover:bg-rose-500/10"
-                      @click="openDeleteModal(v.id, v.code)"
-                    >
-                      🗑️ Xoá
-                    </button>
                   </div>
                 </td>
               </tr>
@@ -339,23 +333,12 @@
       </div>
     </div>
   </div>
-
-  <!-- Confirm Delete Modal -->
-  <ConfirmModal
-    :show="showDeleteModal"
-    :message="`Bạn có chắc chắn muốn xóa voucher này không?`"
-    :itemName="voucherToDelete?.code"
-    :loading="deleting"
-    @confirm="confirmDeleteVoucher"
-    @cancel="closeDeleteModal"
-  />
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { toast } from "vue3-toastify";
 import { vouchersAdminAPI, type UpdateVoucherPayload } from "@/api/vouchers.admin";
-import ConfirmModal from "@/components/ConfirmModal.vue";
 
 // state
 const vouchers = ref<any[]>([]);
@@ -365,11 +348,6 @@ const saving = ref(false);
 const showCreateModal = ref(false);
 const showEditModal = ref(false);
 const editingVoucher = ref<any>(null);
-
-// Delete confirmation modal
-const showDeleteModal = ref(false);
-const voucherToDelete = ref<{ id: string; code: string } | null>(null);
-const deleting = ref(false);
 
 // filters
 const q = ref("");
@@ -495,31 +473,6 @@ function editVoucher(v: any) {
     description: v.description || "",
   };
   showEditModal.value = true;
-}
-
-function openDeleteModal(id: string, code: string) {
-  voucherToDelete.value = { id, code };
-  showDeleteModal.value = true;
-}
-
-function closeDeleteModal() {
-  showDeleteModal.value = false;
-  voucherToDelete.value = null;
-}
-
-async function confirmDeleteVoucher() {
-  if (!voucherToDelete.value) return;
-  deleting.value = true;
-  try {
-    await vouchersAdminAPI.delete(voucherToDelete.value.id);
-    toast.success("Đã xóa");
-    await loadVouchers();
-    closeDeleteModal();
-  } catch (e: any) {
-    toast.error(e?.response?.data?.message || "Xóa thất bại");
-  } finally {
-    deleting.value = false;
-  }
 }
 
 function closeModal() {

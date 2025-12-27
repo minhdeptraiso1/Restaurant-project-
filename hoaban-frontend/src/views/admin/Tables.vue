@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from "vue";
-import { listTables, createTable, deleteTable, updateTable, issueQrCode } from "@/api/tables.admin";
+import { listTables, createTable, updateTable, issueQrCode } from "@/api/tables.admin";
 import { listAreas } from "@/api/areas.admin";
 import { toast } from "vue3-toastify";
 import QRCode from "qrcode";
-import ConfirmModal from "@/components/ConfirmModal.vue";
 
 type Table = {
   id: string;
@@ -31,11 +30,6 @@ const qrData = ref<{
 } | null>(null);
 const generatingQr = ref(false);
 const qrCodeImageUrl = ref<string>("");
-
-// Delete Modal
-const showDeleteModal = ref(false);
-const tableToDelete = ref<Table | null>(null);
-const deleting = ref(false);
 
 // form
 const form = ref<{ areaId: string; code: string; seats: number; status: Table["status"] }>({
@@ -85,32 +79,6 @@ function startEdit(t: Table) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function openDeleteModal(t: Table) {
-  tableToDelete.value = t;
-  showDeleteModal.value = true;
-}
-
-function closeDeleteModal() {
-  showDeleteModal.value = false;
-  tableToDelete.value = null;
-  deleting.value = false;
-}
-
-async function confirmDeleteTable() {
-  if (!tableToDelete.value) return;
-
-  deleting.value = true;
-  try {
-    await deleteTable(tableToDelete.value.id);
-    toast.success("Đã xoá bàn");
-    closeDeleteModal();
-    await load();
-  } catch (e: any) {
-    toast.error(e?.friendlyMessage || "Xoá bàn thất bại");
-  } finally {
-    deleting.value = false;
-  }
-}
 async function submit() {
   if (!isValid.value) {
     toast.warning("Vui lòng nhập đúng thông tin: mã bàn ≥ 2 ký tự, chọn khu vực, số ghế ≥ 1");
@@ -456,10 +424,6 @@ onMounted(load);
                   </button>
 
                   <button class="btn-admin-info text-xs" @click="startEdit(t)">✏️ Sửa</button>
-
-                  <button class="btn-admin-danger text-xs" @click="openDeleteModal(t)">
-                    🗑️ Xoá
-                  </button>
                 </div>
               </td>
             </tr>
@@ -544,14 +508,4 @@ onMounted(load);
       </div>
     </div>
   </div>
-
-  <!-- Confirm Delete Modal -->
-  <ConfirmModal
-    :show="showDeleteModal"
-    :message="`Bạn có chắc chắn muốn xóa bàn này không?`"
-    :itemName="tableToDelete?.code"
-    :loading="deleting"
-    @confirm="confirmDeleteTable"
-    @cancel="closeDeleteModal"
-  />
 </template>

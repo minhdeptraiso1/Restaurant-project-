@@ -92,7 +92,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
     @Override
     public Page<VoucherBriefDto> redeemableCatalog(UUID userId, Pageable pg) {
         long points = currentPoints(userId);
-        var page = voucherRepo.findRedeemable(points, Instant.now(), pg);
+        var page = voucherRepo.findRedeemable(VoucherStatus.ACTIVE, points, Instant.now(), pg);
         return page.map(v -> new VoucherBriefDto(
                 v.getId(), v.getCode(), v.getName(), v.getType(),
                 v.getValue(), v.getPointCost(), v.getMinOrder(), v.getMaxDiscount(),

@@ -5,13 +5,14 @@ import { listDishesAdmin } from "@/api/dishes.admin";
 import { listCategories } from "@/api/categories.admin";
 import { listAreas } from "@/api/areas.admin";
 import { listTables } from "@/api/tables.admin";
-import { getOrderStatsByStatus } from "@/api/orders.service";
+import { getOrderStatsByStatus, getRevenueLast7Days } from "@/api/orders.service";
 import { getReservationStatsByStatus } from "@/api/reservations.service";
 import http from "@/api/http";
 import { toast } from "vue3-toastify";
 import AdminPageHeader from "@/components/AdminPageHeader.vue";
 import AdminLoadingSkeleton from "@/components/AdminLoadingSkeleton.vue";
 import EChartsPie from "@/components/admin/EChartsPie.vue";
+import BarChart from "@/components/admin/BarChart.vue";
 
 const stats = ref({
   users: 0,
@@ -28,6 +29,8 @@ const loading = ref(false);
 const orderStats = ref<Record<string, number>>({});
 const reservationStats = ref<Record<string, number>>({});
 const statsLoading = ref(false);
+const revenueData = ref<Record<string, number>>({});
+const revenueLoading = ref(false);
 let healthInterval: any = null;
 let cleanupInterval: any = null;
 
@@ -73,6 +76,18 @@ async function loadDailyStats() {
     console.warn("Lỗi tải thống kê trong ngày:", e);
   } finally {
     statsLoading.value = false;
+  }
+}
+
+async function loadRevenue() {
+  revenueLoading.value = true;
+  try {
+    const response = await getRevenueLast7Days();
+    revenueData.value = response.data || {};
+  } catch (e) {
+    console.warn("Lỗi tải doanh thu:", e);
+  } finally {
+    revenueLoading.value = false;
   }
 }
 
@@ -136,6 +151,7 @@ function stopAutoCleanup() {
 onMounted(() => {
   loadStats();
   loadDailyStats();
+  loadRevenue();
   startHealthMonitoring();
   startAutoCleanup();
 });
@@ -236,6 +252,8 @@ const orderStatusLabels: Record<string, string> = {
   COMPLETED: "Hoàn thành",
   CANCELLED: "Đã hủy",
   PAID: "Đã thanh toán",
+  OPEN: "Đang mở",
+  UNPAID: "Chưa thanh toán",
 };
 
 const reservationStatusLabels: Record<string, string> = {
@@ -266,6 +284,33 @@ const reservationStatusColors = [
   "#ef4444", // red - CANCELLED
   "#f59e0b", // amber - NO_SHOW
 ];
+
+const revenueLabels = computed(() => {
+  return Object.keys(revenueData.value).sort();
+});
+
+const revenueChartData = computed(() => {
+  const labels = revenueLabels.value;
+  const dataInThousand = labels.map((date) => {
+    const value = revenueData.value[date] || 0;
+    return Number((value / 1000).toFixed(0));
+  });
+
+  return [
+    {
+      label: "Doanh thu (nghìn)",
+      data: dataInThousand,
+      color: "#10b981",
+    },
+  ];
+});
+
+const revenueDisplayLabels = computed(() => {
+  return revenueLabels.value.map((date) => {
+    const d = new Date(date);
+    return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
+  });
+});
 </script>
 
 <template>
@@ -551,6 +596,51 @@ const reservationStatusColors = [
             :labels="reservationStatusLabels"
             :colors="reservationStatusColors"
             :height="350"
+          />
+        </div>
+      </div>
+
+      <!-- Biểu đồ doanh thu 7 ngày -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+            <span class="text-3xl">💰</span>
+            Doanh thu 7 ngày gần nhất
+          </h2>
+          <button
+            @click="loadRevenue"
+            :disabled="revenueLoading"
+            class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center gap-2"
+          >
+            <span v-if="!revenueLoading">🔄</span>
+            <span
+              v-else
+              class="inline-block w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"
+            ></span>
+            {{ revenueLoading ? "Đang tải..." : "Làm mới" }}
+          </button>
+        </div>
+
+        <div
+          class="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-6"
+        >
+          <div v-if="revenueLoading" class="text-center py-12">
+            <div
+              class="inline-block w-12 h-12 border-4 border-white/20 border-t-emerald-500 rounded-full animate-spin mb-4"
+            ></div>
+            <p class="text-white/60">Đang tải dữ liệu doanh thu...</p>
+          </div>
+          <div v-else-if="revenueLabels.length === 0" class="text-center py-12">
+            <div class="text-6xl mb-4">📊</div>
+            <p class="text-white/60">Chưa có dữ liệu doanh thu</p>
+          </div>
+          <BarChart
+            v-else
+            title="Doanh thu theo ngày (nghìn VNĐ)"
+            :labels="revenueDisplayLabels"
+            :datas="revenueChartData"
+            :original-data="revenueData"
+            :height="400"
           />
         </div>
       </div>

@@ -135,5 +135,11 @@ public class OrderController {
     }
 
 
+    @PreAuthorize("hasAnyRole('ADMIN','STAFF')")
+    @GetMapping("/stats/revenue-last-7-days")
+    public ApiResponse<?> revenueLast7Days() {
+        return ApiResponse.ok(orderService.getRevenueLast7Days());
+    }
+
 }
 

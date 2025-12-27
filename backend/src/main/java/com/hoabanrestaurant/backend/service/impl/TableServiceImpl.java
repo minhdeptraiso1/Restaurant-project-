@@ -74,12 +74,18 @@ public class TableServiceImpl implements TableService {
     public TableDto updateTable(UUID id, CreateTableReq req) {
         Area area = areaRepo.findById(req.areaId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Khu vực không tồn tại"));
-        if (tableRepo.existsByArea_IdAndCodeIgnoreCase(area.getId(), req.code()))
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Mã bàn đã tồn tại trong khu vực");
+
         RestaurantTable table = tableRepo.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Bàn không tồn tại"));
+
+        if (!table.getCode().equalsIgnoreCase(req.code()))
+
+            if (tableRepo.existsByArea_IdAndCodeIgnoreCase(area.getId(), req.code()))
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "Mã bàn đã tồn tại trong khu vực");
+
+
         table = RestaurantTable.builder()
-                .id(UUID.randomUUID())
+                .id(id)
                 .area(area)
                 .code(req.code().trim())
                 .seats(req.seats())

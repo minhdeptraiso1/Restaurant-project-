@@ -11,6 +11,7 @@ import com.hoabanrestaurant.backend.dto.response.OrderDto;
 import com.hoabanrestaurant.backend.entity.Order;
 import org.springframework.security.oauth2.jwt.Jwt;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -54,4 +55,7 @@ public interface OrderService {
     OrderDto openByQr(UUID userIdOrNull, String qrCode, String note);
 
     Map<String, Long> getOrderStatsToday();
+
+    Map<String, BigDecimal> getRevenueLast7Days();
+
 }
