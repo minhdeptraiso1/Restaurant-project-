@@ -13,6 +13,25 @@ services:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - hoaban_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: hoaban_redis
+    restart: always
+    command: redis-server --requirepass redis123 --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redisdata:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - hoaban_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
   backend:
     build:
@@ -28,6 +47,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: 123
     ports:
       - "8080:8080"
+    networks:
+      - hoaban_network
 
   backendchat:
     build:
@@ -37,11 +58,23 @@ services:
     restart: always
     depends_on:
       - backend
+      - redis
     environment:
       SPRING_AI_MODEL: gemini-1.5-flash
+      SPRING_AI_PROJECT_ID: ${GEMINI_PROJECT_ID}
       SPRING_AI_API_KEY: ${GEMINI_API_KEY}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: redis123
+      SPRING_DATA_REDIS_TIMEOUT: 60000
+      SPRING_DATA_REDIS_LETTUCE_POOL_MAX_ACTIVE: 8
+      SPRING_DATA_REDIS_LETTUCE_POOL_MAX_IDLE: 8
+      SPRING_DATA_REDIS_LETTUCE_POOL_MIN_IDLE: 0
+      BACKEND_API_URL: http://backend:8080
     ports:
       - "8085:8085"
+    networks:
+      - hoaban_network
 
   frontend:
     build:
@@ -54,6 +87,15 @@ services:
       - backendchat
     ports:
       - "80:80"
+    networks:
+      - hoaban_network
 
 volumes:
   pgdata:
+    driver: local
+  redisdata:
+    driver: local
+
+networks:
+  hoaban_network:
+    driver: bridge
