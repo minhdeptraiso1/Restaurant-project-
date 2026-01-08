@@ -229,7 +229,6 @@ public class ComboServiceImpl implements ComboService {
             result.addAll(buildDishesFromFrequency(freqRows, LIMIT));
         }
 
-        // Nếu đủ 4 thì return luôn
         if (result.size() >= LIMIT) return result.subList(0, LIMIT);
 
         // ===== 2) SIGNATURE =====

@@ -25,6 +25,7 @@ export type OrderDto = {
   note?: string;
   items: OrderItemDto[];
   appliedVoucherCode?: string;
+  createdAt: string;
 };
 
 /* ===== ORDER (DINE-IN + DELIVERY) ===== */

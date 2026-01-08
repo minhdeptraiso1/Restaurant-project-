@@ -52,7 +52,7 @@ public class Dish {
     private String imageUrl;
 
     @Column(name = "is_signature")
-    private boolean signature;
+    private boolean signature = false;
 
 
     @Enumerated(EnumType.STRING)

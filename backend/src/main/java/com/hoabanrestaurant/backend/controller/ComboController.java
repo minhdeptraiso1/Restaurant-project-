@@ -1,4 +1,3 @@
-// controller/ComboController.java
 package com.hoabanrestaurant.backend.controller;
 
 import com.hoabanrestaurant.backend.dto.request.CreateComboReq;
@@ -64,7 +63,6 @@ public class ComboController {
         return ApiResponse.ok("Xóa combo thành công");
     }
 
-    //recoment system goi y mon theo lich su an uong
     @GetMapping("/suggested")
     public ApiResponse<SuggestedMenuDto> getSuggestedMenu(@AuthenticationPrincipal Jwt jwt) {
         return ApiResponse.ok(service.getSuggestedMenu(jwt));

@@ -1,11 +1,12 @@
 package com.hoabanrestaurant.backend.dto.response;
 
-import com.hoabanrestaurant.backend.enums.OrderStatus;
-import com.hoabanrestaurant.backend.enums.OrderTypes;
-
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+
+import com.hoabanrestaurant.backend.enums.OrderStatus;
+import com.hoabanrestaurant.backend.enums.OrderTypes;
 
 public record OrderDto(
         UUID id,
@@ -19,7 +20,8 @@ public record OrderDto(
         BigDecimal total,
         String note,
         List<OrderItemDto> items,
-        String appliedVoucherCode
+        String appliedVoucherCode,
+        Instant createdAt
 
 ) {
 }

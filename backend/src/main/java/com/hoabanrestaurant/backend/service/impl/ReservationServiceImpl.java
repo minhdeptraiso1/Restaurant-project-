@@ -128,6 +128,9 @@ public class ReservationServiceImpl implements ReservationService {
         if (r.getStatus() == ReservationStatus.CANCELLED)
             return;
 
+
+        //linkRepo.deleteAllByReservation(reservationId);
+
         r.setStatus(ReservationStatus.CANCELLED);
         r.setCancelReason(reason);
         r.setCanceledBy("USER:" + r.getUser().getEmail());
@@ -141,6 +144,9 @@ public class ReservationServiceImpl implements ReservationService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Đơn đặt không tồn tại"));
         if (r.getStatus() == ReservationStatus.CANCELLED)
             return;
+
+
+        //linkRepo.deleteAllByReservation(reservationId);
 
         r.setStatus(ReservationStatus.CANCELLED);
         r.setCancelReason(reason);

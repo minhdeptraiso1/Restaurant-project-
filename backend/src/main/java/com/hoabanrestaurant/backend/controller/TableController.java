@@ -29,7 +29,7 @@ import java.util.UUID;
 public class TableController {
     private final TableService service;
     private final QrSigner qrSigner;
-    
+
 
     @PostMapping("/issue")
     public Map<String, Object> issue(@RequestParam UUID tableId,
@@ -38,7 +38,7 @@ public class TableController {
         return Map.of(
                 "tableId", tableId,
                 "ttlSeconds", ttlSeconds,
-                "qrCode", code  // <-- Chuỗi này chính là giá trị bạn gửi vào open-by-qr
+                "qrCode", code
         );
     }
 

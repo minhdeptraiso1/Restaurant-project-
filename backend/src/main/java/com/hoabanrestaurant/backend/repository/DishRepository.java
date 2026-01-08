@@ -27,6 +27,7 @@ public interface DishRepository extends JpaRepository<Dish, UUID> {
             """)
     List<Dish> findRandomActiveDishes(Pageable pageable);
 
+
     List<Dish> findTop4BySignatureTrueAndStatus(MenuStatus status);
 
 

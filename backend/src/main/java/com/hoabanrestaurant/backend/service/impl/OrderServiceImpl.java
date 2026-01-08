@@ -336,7 +336,8 @@ public class OrderServiceImpl implements OrderService {
                 o.getSubtotal(), o.getDiscount(), o.getTax(), o.getTotal(),
                 o.getNote(),
                 itemDtos,
-                voucherCode
+                voucherCode,
+                o.getCreatedAt()
         );
     }
 
@@ -507,6 +508,7 @@ public class OrderServiceImpl implements OrderService {
             return toDto(order, items, null);
         }).toList();
     }
+
 
     @Override
     public OrderDto getOrderById(UUID orderId) {

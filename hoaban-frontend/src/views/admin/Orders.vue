@@ -8,6 +8,7 @@ import {
   getAllOrders,
   clearOrder,
   updateOrderStatus as updateOrderStatusAPI,
+  detailOrder,
 } from "@/api/orders.service";
 import { listTables } from "@/api/tables.admin";
 import { listAreas } from "@/api/areas.admin";
@@ -72,6 +73,11 @@ const statusUpdateOptions = [
   { value: "PAID", label: "Đã thanh toán" },
   { value: "CANCELLED", label: "Đã hủy" },
 ];
+
+// === Detail Modal ===
+const showDetailModal = ref(false);
+const selectedOrder = ref<any>(null);
+const loadingDetail = ref(false);
 
 // Utilities
 function areaName(areaId?: string) {
@@ -305,6 +311,20 @@ function selectOrderFor(action: "add" | "pay" | "status", order: any) {
   }
 }
 
+async function viewOrderDetail(order: any) {
+  loadingDetail.value = true;
+  showDetailModal.value = true;
+  try {
+    const { data } = await detailOrder(order.id);
+    selectedOrder.value = data;
+  } catch (e: any) {
+    toast.error(e?.friendlyMessage || "Không tải được chi tiết đơn hàng");
+    showDetailModal.value = false;
+  } finally {
+    loadingDetail.value = false;
+  }
+}
+
 async function updateOrderStatus() {
   if (!statusForm.value.orderId || !statusForm.value.status) {
     toast.error("Vui lòng chọn trạng thái");
@@ -457,6 +477,12 @@ onMounted(loadData);
                     Ghi chú:
                     <span class="font-semibold text-white">{{ order.note || "Không có" }}</span>
                   </div>
+                  <div class="text-white/80">
+                    Thời gian tạo:
+                    <span class="font-semibold text-white">{{
+                      new Date(order.createdAt).toLocaleString("vi-VN")
+                    }}</span>
+                  </div>
                   <div class="text-white/60">
                     ID:
                     <span class="font-mono text-xs text-white/80">{{ order.id.slice(0, 8) }}…</span>
@@ -481,6 +507,12 @@ onMounted(loadData);
 
             <!-- Quick Actions -->
             <div class="flex flex-col gap-2 shrink-0">
+              <button
+                class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 border border-indigo-400/30"
+                @click="viewOrderDetail(order)"
+              >
+                👁️ Chi tiết
+              </button>
               <button
                 class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 border border-blue-400/30"
                 @click="selectOrderFor('status', order)"
@@ -733,6 +765,136 @@ onMounted(loadData);
               <template v-else> Xác nhận thanh toán </template>
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div v-if="showDetailModal" class="fixed inset-0 z-50 grid place-items-center overflow-y-auto py-8">
+      <div
+        class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        @click="showDetailModal = false"
+      ></div>
+      <div
+        class="relative w-full max-w-3xl mx-4 rounded-2xl border border-white/10 bg-white/5 text-white shadow-xl my-8"
+      >
+        <div class="flex items-center justify-between p-5 border-b border-white/10">
+          <h3 class="text-lg font-semibold">👁️ Chi tiết đơn hàng</h3>
+          <button class="text-white/70 hover:text-white" @click="showDetailModal = false">✖</button>
+        </div>
+
+        <div v-if="loadingDetail" class="p-10 text-center text-white/70">
+          <div class="inline-block animate-spin w-8 h-8 border-4 border-white/20 border-t-white rounded-full"></div>
+          <p class="mt-3">Đang tải...</p>
+        </div>
+
+        <div v-else-if="selectedOrder" class="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+          <!-- Thông tin cơ bản -->
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="space-y-3">
+              <div>
+                <label class="text-sm text-white/60">Mã đơn hàng</label>
+                <p class="font-semibold text-lg">{{ selectedOrder.code || selectedOrder.id.slice(0, 8) }}</p>
+              </div>
+              <div>
+                <label class="text-sm text-white/60">Trạng thái</label>
+                <div class="mt-1">
+                  <span
+                    class="inline-block px-3 py-1.5 rounded-lg text-sm font-medium"
+                    :class="getStatusColor(selectedOrder.status)"
+                  >
+                    {{ statusLabel(selectedOrder.status) }}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label class="text-sm text-white/60">Loại đơn</label>
+                <p class="font-medium">{{ selectedOrder.types === 'DELIVERY' ? '🚚 Giao hàng' : '🍽️ Tại bàn' }}</p>
+              </div>
+              <div>
+                <label class="text-sm text-white/60">Bàn</label>
+                <p class="font-medium">{{ getTableName(selectedOrder.tableId) }}</p>
+              </div>
+            </div>
+            
+            <div class="space-y-3">
+              <div v-if="selectedOrder.customerName || selectedOrder.user?.name">
+                <label class="text-sm text-white/60">Khách hàng</label>
+                <p class="font-medium">👤 {{ selectedOrder.customerName || selectedOrder.user?.name }}</p>
+              </div>
+              <div>
+                <label class="text-sm text-white/60">Thời gian tạo</label>
+                <p class="font-medium">{{ new Date(selectedOrder.createdAt).toLocaleString('vi-VN') }}</p>
+              </div>
+              <div v-if="selectedOrder.note">
+                <label class="text-sm text-white/60">Ghi chú</label>
+                <p class="font-medium">{{ selectedOrder.note }}</p>
+              </div>
+              <div v-if="selectedOrder.appliedVoucherCode">
+                <label class="text-sm text-white/60">Mã giảm giá</label>
+                <p class="font-medium text-emerald-400">🎫 {{ selectedOrder.appliedVoucherCode }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Danh sách món -->
+          <div class="border-t border-white/10 pt-4">
+            <h4 class="font-semibold text-lg mb-3">📋 Danh sách món ({{ selectedOrder.items?.length || 0 }})</h4>
+            <div class="space-y-2">
+              <div
+                v-for="item in selectedOrder.items"
+                :key="item.id"
+                class="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10"
+              >
+                <div class="flex items-center gap-3">
+                  <span v-if="item.itemType === 'COMBO'" class="text-2xl">🎁</span>
+                  <span v-else class="text-2xl">🍽️</span>
+                  <div>
+                    <p class="font-medium">{{ getItemName(item) }}</p>
+                    <p class="text-sm text-white/60">{{ vnd(item.unitPrice) }} × {{ item.quantity }}</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p class="font-semibold text-emerald-400">{{ vnd(item.lineTotal) }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tổng tiền -->
+          <div class="border-t border-white/10 pt-4 space-y-2">
+            <div class="flex justify-between text-white/80">
+              <span>Tạm tính:</span>
+              <span class="font-medium">{{ vnd(selectedOrder.subtotal) }}</span>
+            </div>
+            <div class="flex justify-between text-white/80">
+              <span>Giảm giá:</span>
+              <span class="font-medium text-amber-400">-{{ vnd(selectedOrder.discount) }}</span>
+            </div>
+            <div class="flex justify-between text-white/80">
+              <span>Thuế:</span>
+              <span class="font-medium">{{ vnd(selectedOrder.tax) }}</span>
+            </div>
+            <div class="flex justify-between text-xl font-bold border-t border-white/10 pt-2 mt-2">
+              <span>Tổng cộng:</span>
+              <span class="text-emerald-400">{{ vnd(selectedOrder.total) }}</span>
+            </div>
+          </div>
+
+          <!-- ID đầy đủ -->
+          <div class="border-t border-white/10 pt-4">
+            <label class="text-sm text-white/60">Order ID (Full)</label>
+            <p class="font-mono text-xs text-white/80 break-all">{{ selectedOrder.id }}</p>
+          </div>
+        </div>
+
+        <div class="p-5 border-t border-white/10">
+          <button
+            class="w-full px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition"
+            @click="showDetailModal = false"
+          >
+            Đóng
+          </button>
         </div>
       </div>
     </div>
